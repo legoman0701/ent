@@ -1,0 +1,33 @@
+/**
+ * @author tfer
+ */
+
+Ext.ns('eliot.textes.vuecalendaire');
+
+eliot.textes.vuecalendaire.ConfigServeur = {
+
+  url: {
+    accesUrl: undefined,
+    detail: undefined,
+    detailEleve: undefined,
+    day: undefined,
+    initDays: undefined
+  },
+
+  data: {
+    nbJoursSemaine: undefined,
+    premierJour: undefined,
+    dernierJour: undefined,
+    heureDebut: undefined,
+    heureFin: undefined,
+    acces: undefined,
+    cdtId: undefined,
+    evtId: undefined,
+    date: undefined,
+    estJournee: undefined,
+    jour: undefined,
+    listeJoursWithActivitesMaison: []
+  }
+
+};
+

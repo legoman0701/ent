@@ -1,0 +1,112 @@
+/*
+ * Copyright © FYLAB and the Conseil Régional d'Île-de-France, 2009
+ * This file is part of L'Interface Libre et Interactive de l'Enseignement (Lilie).
+ *
+ * Lilie is free software. You can redistribute it and/or modify since
+ * you respect the terms of either (at least one of the both license) :
+ * - under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * - the CeCILL-C as published by CeCILL-C; either version 1 of the
+ * License, or any later version
+ *
+ * There are special exceptions to the terms and conditions of the
+ * licenses as they are applied to this software. View the full text of
+ * the exception in file LICENSE.txt in the directory of this software
+ * distribution.
+ *
+ * Lilie is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * Licenses for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * and the CeCILL-C along with Lilie. If not, see :
+ *  <http://www.gnu.org/licenses/> and
+ *  <http://www.cecill.info/licences.fr.html>.
+ */
+
+/**
+ * Crée le bouton aide en ligne
+ * @param jsonAideEnLigne
+ *
+ * @author bahj
+ */
+Ext.ns('eliot.aideEnLigne');
+
+eliot.aideEnLigne.aucuneAide = {
+  titre : undefined,
+  texte : undefined
+};
+
+
+eliot.aideEnLigne.creeBoutonAideEnLigne = function(jsonAideEnLigne, style) {
+  if (jsonAideEnLigne) {
+    //Menu
+    var menu;
+    var boutonAideEnLigne;
+    if (jsonAideEnLigne.items.length > 0) {
+      menu = creeSousMenu(jsonAideEnLigne);
+    }
+
+    boutonAideEnLigne = new Ext.Button({
+      icon : jsonAideEnLigne.urlImage,
+      style: style != null ? style : 'float:right;',
+      menu : menu,
+      url : jsonAideEnLigne.url,
+      handler : onButtonClick ,
+      template: new Ext.Template(
+          '<table id="{4}" cellspacing="0" class="x-btn {3}">',
+            '<tbody class="x-btn-small x-btn-icon-small-left">',
+              '<tr>',
+                '<td class="x-btn-mc">',
+                  '<em class="{2}" unselectable="on" style="background-color:#F3F6FB;">',
+                    '<button class="x-btn-text {2}" type="{0}"></button>',
+                  '</em>',
+                '</td>',
+              '</tr>',
+            '</tbody>',
+          '</table>'
+          ).compile()
+    });
+
+    return boutonAideEnLigne;
+  } else {
+    return [];
+  }
+
+
+  function creeSousMenu(item) {
+    var menu = new Ext.menu.Menu({
+      style: {
+        overflow: 'visible'
+      }
+    });
+
+    Ext.each(
+        item.items,
+        function(sousMenu) {
+          menu.add({
+            text : sousMenu.label,
+            url : sousMenu.url,
+            handler : onButtonClick
+          });
+        }
+        );
+
+    return menu;
+  }
+
+  function onButtonClick(btn) {
+    if (btn.url) {
+      window.open(btn.url, '_newtab');
+    } else if(!btn.menu){
+      Ext.MessageBox.show({
+        title:eliot.aideEnLigne.aucuneAide.titre,
+        msg: Ext.util.Format.htmlDecode(eliot.aideEnLigne.aucuneAide.texte),
+        buttons: Ext.Msg.OK
+      });
+    }
+  }
+
+};

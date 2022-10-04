@@ -1,0 +1,1289 @@
+
+var nbActMaison = 0;
+var nbAct = 0;
+var nbTaf = 0;
+var nbActAjoutes = 0;
+var nbTafAjoutes = 0;
+var nbDocAjoutes = 0;
+var nbUrlAjoutes = 0;
+var modif = false;
+var gActiviteVueDetailleeAlreadyClicked=false;
+/**
+ * Renvoie une date a partir d'une chaine "aaaa mm jj hh:mm:ss"
+ * @param {String} s
+ * @returns {date}
+ */
+function StringToDate(s) {
+  var date = new Date(s.substring(0, 4), s.substring(5, 7) - 1, s.substring(8, 10),
+      s.substring(11, 13), s.substring(14, 16));
+  if (!date) return null;
+  return date
+}
+
+function AfficheTitreOnglet(id,dateDebut,dateFin,label) {
+  var debut = StringToDate(dateDebut);
+  var fin = StringToDate(dateFin);
+  var formateDate = scheduler.date.date_to_str("%l %j %F %Y");
+  var formateHeure = scheduler.date.date_to_str("%G:%i");
+  document.getElementById(id).innerHTML =
+      formateDate(debut) + "&nbsp;&nbsp;&nbsp;" +
+      formateHeure(debut) + " - " + formateHeure(fin) + "&nbsp;&nbsp;&nbsp;" +
+      decodeURIComponent(label);
+}
+
+function AfficheTitreDay(id,date) {
+  var dateJour = StringToDate(date);
+  var formateDate = scheduler.date.date_to_str("%l %j %F %Y");
+  document.getElementById(id).innerHTML = formateDate(dateJour);
+}
+
+function AfficheDateTravailMaison(id,date) {
+  var debut = StringToDate(date);
+  var formateDate = scheduler.date.date_to_str("%d/%m/%Y");
+  document.getElementById(id).innerHTML = "Pour le&nbsp;&nbsp;&nbsp;" + formateDate(debut);
+}
+
+function dateDiff(date1, date2){
+  var diff = {};      // Initialisation du retour
+  var tmp = date2 - date1;
+  tmp = Math.floor(tmp/1000);           // Nombre de secondes entre les 2 dates
+  diff.sec = tmp % 60;					// Extraction du nombre de secondes
+  tmp = Math.floor((tmp-diff.sec)/60);	// Nombre de minutes (partie entiere)
+  diff.min = tmp % 60;					// Extraction du nombre de minutes
+  tmp = Math.floor((tmp-diff.min)/60);	// Nombre d'heures (entieres)
+  diff.hour = tmp % 24;					// Extraction du nombre d'heures
+  tmp = Math.floor((tmp-diff.hour)/24);	// Nombre de jours restants
+  diff.day = tmp;
+  return diff;
+}
+
+function AfficheDateTravailDonne(id,strDateEvt,strDateDonneLe) {
+  var dateEvt = StringToDate(strDateEvt);
+  var dateDonneeLe = StringToDate(strDateDonneLe);
+  var strJour = "jour";
+  var nbJours = dateDiff(dateDonneeLe, dateEvt);
+  if (nbJours.day > 1) strJour += "s";
+  document.getElementById(id).innerHTML = "Donn&eacute; il y a&nbsp;" + nbJours.day + "&nbsp;" + strJour;
+}
+
+
+function ActiviteVueDetaillee(url, idActivite, idEvt, idCdt, date, contexte, idImage) {
+  function pad(s) { return (s < 10) ? '0' + s : s; }
+  var strUrl;
+  //var d = new Date(date);
+  var a=date.split(" ");
+  var j=a[0].split("-");
+  var t=a[1].split(":");
+  var d = new Date(j[0],(j[1]-1),j[2],t[0],t[1],t[2]);
+  var strDate = [pad(d.getDate()), pad(d.getMonth()+1), d.getFullYear()].join('/');
+  var actId = idActivite;
+
+  // Mantis 56485 : dorénavant, depuis la vue calendaire on arrive toujours en mode modification ici, la sauvegarde doit avoir été faite quand on est ici
+  // if (idImage.startsWith("img_vuedetaille_0_d")) actId = 0;
+
+  if (actId > 0) {
+    strUrl = url + '?mode=modification' +
+        '&activiteId=' + actId + '&evenementSelectionneId=' + idEvt +
+        '&cahierDeTextesId=' + idCdt + '&fromVueCalendaire=true';
+  }
+
+  else if (idEvt > 0 && idCdt > 0 &&
+             strDate.match(/(\d{1,2})[\/](\d{1,2})[\/](\d{4})/) &&
+             (contexte == 'MAI' || contexte == 'CLA')) {
+    strUrl = url + '?mode=creation' +
+        '&contexteCode=' + contexte + '&date=' + strDate +
+        '&evenementSelectionneId=' + idEvt + '&cahierDeTextesId=' + idCdt +
+        '&fromVueCalendaire=true';
+  }
+  if (strUrl) parent.location.href = strUrl;
+}
+
+
+function SupprimeFichier(divFichierId, divRessourceASupprId, ressourceId) {
+  var parent = document.getElementById(divFichierId).parentNode;
+  parent.removeChild(document.getElementById(divFichierId));
+  if (ressourceId && ressourceId > 0 && divRessourceASupprId != "") {
+    if (document.getElementById(divRessourceASupprId).value != "")
+      document.getElementById(divRessourceASupprId).value += ",";
+    document.getElementById(divRessourceASupprId).value += ressourceId;
+  }
+}
+
+
+function insertAfter(newNode, referenceNode) {
+  referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
+
+function AjouteDocumentAct(id) {
+  var original = document.getElementById(id);
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = id + "_" + ++nbDocAjoutes;
+  original.parentNode.appendChild(clone);
+  InitCloneDoc(document.getElementById(clone.id), original.parentNode);
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  original.parentNode.removeChild(document.getElementById(clone.id));
+  var chaine = id.substring(19);
+  if (chaine) insertAfter(clone, document.getElementById("DocumentsId_" + chaine));
+  if (nbActAjoutes>0 && clone.id.toString().length > 20)
+    document.getElementById("act_fichier_ajoute_file_"+clone.id.toString().substring(21)).focus();
+  else
+    document.getElementById("act_fichier_ajoute_file_"+nbDocAjoutes).focus();
+}
+
+function AjouteUrlAct(id, parentId) {
+  var original = document.getElementById(id);
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = id + "_" + ++nbUrlAjoutes;
+  original.parentNode.appendChild(clone);
+  InitCloneUrl(document.getElementById(clone.id), original.parentNode);
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  original.parentNode.removeChild(document.getElementById(clone.id));
+  var chaine = id.substring(15);
+  if (chaine) insertAfter(clone, document.getElementById("DocumentsId_" + chaine));
+  if (nbActAjoutes>0 && clone.id.toString().length > 16)
+    document.getElementById("act_url_ajoute_url_"+clone.id.toString().substring(17)).focus();
+  else
+    document.getElementById("act_url_ajoute_url_"+nbUrlAjoutes).focus();
+}
+
+function AjouteDocumentTaf(id) {
+  var original = document.getElementById(id);
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = id + "_" + ++nbDocAjoutes;
+  original.parentNode.appendChild(clone);
+  InitCloneDoc(document.getElementById(clone.id), original.parentNode);
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  original.parentNode.removeChild(document.getElementById(clone.id));
+  var chaine = id.substring(19);
+  if (chaine) {
+    insertAfter(clone, document.getElementById("taf_DocumentsId_" + chaine));
+  }
+  if (nbTafAjoutes>0 && clone.id.toString().length > 20)
+    document.getElementById("taf_fichier_ajoute_file_"+clone.id.toString().substring(21)).focus();
+  else
+    document.getElementById("taf_fichier_ajoute_file_"+nbDocAjoutes).focus();
+}
+
+function AjouteUrlTaf(id, parentId) {
+  var original = document.getElementById(id);
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = id + "_" + ++nbUrlAjoutes;
+  original.parentNode.appendChild(clone);
+  InitCloneUrl(document.getElementById(clone.id), original.parentNode);
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  original.parentNode.removeChild(document.getElementById(clone.id));
+  var chaine = id.substring(15);
+  if (chaine) insertAfter(clone, document.getElementById("taf_DocumentsId_" + chaine));
+  if (nbTafAjoutes>0 && clone.id.toString().length > 16)
+    document.getElementById("taf_url_ajoute_url_"+clone.id.toString().substring(17)).focus();
+  else
+    document.getElementById("taf_url_ajoute_url_"+nbUrlAjoutes).focus();
+}
+
+
+function AjoutActivite() {
+  var original = document.getElementById('act_duplic');
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = "act_duplic" + ++nbActAjoutes;
+  original.parentNode.appendChild(clone);
+  InitFilsAct(document.getElementById(clone.id),'act_duplic');
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  document.getElementById('racine').removeChild(document.getElementById(clone.id));
+  var IdDuplicater = 'partie_taf_debut';
+  document.getElementById('racine').insertBefore(clone, document.getElementById(IdDuplicater));
+
+  CKEDITOR.replace('act_description_0_d'+nbActAjoutes, {
+    removePlugins: 'toolbar,elementspath',
+    resize_enabled: false,
+    allowedContent: true,
+    height: '100px',
+    readOnly: false,
+    startupFocus : true
+  } );
+
+  comboFormate("act_type_0_d"+nbActAjoutes);
+  comboFormate("act_chapitre_0_d"+nbActAjoutes);
+
+  nbAct++;
+  document.getElementById("nbAct").value = nbAct;
+
+  //document.getElementById('act_titre_0'+'_d'+nbActAjoutes).focus();
+}
+
+
+function AjoutTravailAFaire() {
+  var original = document.getElementById('taf_duplic');
+  var clone = original.cloneNode(true); // "deep" clone
+  clone.id = "taf_duplic" + ++nbTafAjoutes;
+  original.parentNode.appendChild(clone);
+  InitFilsTaf(document.getElementById(clone.id),'taf_duplic');
+  // deplacer la div dupliquee au-dessus de toutes les autres activites :
+  document.getElementById('racine').removeChild(document.getElementById(clone.id));
+  var IdDuplicater = 'partie_taf_fin';
+  document.getElementById('racine').insertBefore(clone, document.getElementById(IdDuplicater));
+
+  $('.input-group.date').datepicker({
+    format: "dd/mm/yyyy",
+    language: "fr",
+    daysOfWeekDisabled: "0",
+    autoclose: true,
+    todayHighlight: true
+  });
+
+  CKEDITOR.replace('taf_description_0_d'+nbTafAjoutes, {
+    removePlugins: 'toolbar,elementspath',
+    resize_enabled: false,
+    allowedContent: true,
+    height: '100px',
+    readOnly: false,
+    startupFocus : true
+  } );
+  comboFormate("taf_type_0_d"+nbTafAjoutes);
+  comboFormate("taf_chapitre_0_d"+nbTafAjoutes);
+  nbTaf++;
+  document.getElementById("nbTaf").value = nbTaf;
+
+  //  nbTafAjoutes
+  var date = StringToDate(dateDebutEvenement);
+  var DateMonth = ((date.getMonth())+1).toString();
+  var DateDay = ((date.getDate())+1).toString();
+  if(DateMonth.length == 1) DateMonth = '0' + DateMonth;
+  if(DateDay.length == 1) DateDay = '0' + DateDay
+  var dateStr = DateDay+'/'+DateMonth+'/'+date.getFullYear();
+  listeCours(getEvtsCompatibles,idCdt,idEvenement,0,dateStr,true,'taf_date_d'+nbTafAjoutes);
+
+  //document.getElementById('taf_titre_0'+'_d'+nbTafAjoutes).focus();
+}
+
+
+function InitFilsAct(node,parent) {
+  var continuer = true;
+  var html = "";
+  if (node.hasChildNodes()) {
+    var collEnfants = node.childNodes;
+    var j = 0;
+    continuer = (collEnfants.length > 0);
+    while (continuer)
+    {
+      if (collEnfants[j].id) {
+        collEnfants[j].id = collEnfants[j].id + "_d" + nbActAjoutes;
+
+        var regexp = /activite\d*/;
+        if (collEnfants[j].name && regexp.test(collEnfants[j].name.split(".")[0])) {
+          collEnfants[j].name = collEnfants[j].name.split(".")[0].substring(0,8) + nbAct + "." + collEnfants[j].name.split(".")[1];
+        }
+
+        if (collEnfants[j].id.toString() == "Ajout_document" + "_d" + nbActAjoutes) {
+          html = document.getElementById(collEnfants[j].id.toString()).innerHTML;
+          html = html.replace(/_0/g, "_0_d"+nbActAjoutes);
+          document.getElementById(collEnfants[j].id.toString()).innerHTML = html;
+        }
+
+        if (document.getElementById(collEnfants[j].id.toString()).tagName == "SELECT")
+          collEnfants[j].value = null;
+        else
+          collEnfants[j].value = "";
+
+        if (collEnfants[j].id.toString().startsWith("activite_id")) {
+          collEnfants[j].value = "0";
+          collEnfants[j].id = "activite_id_" + (nbAct);
+        }
+
+        if ((collEnfants[j].id.toString().startsWith('act_fichier_ajoute_0_') && !collEnfants[j].id.toString().startsWith('act_fichier_ajoute_0_d')) ||
+            (collEnfants[j].id.toString() == 'cke_act_description_0_d'+nbActAjoutes) ||
+            (collEnfants[j].id.toString().startsWith('act_url_ajoute_0_') && !collEnfants[j].id.toString().startsWith('act_url_ajoute_0_d')) ){
+          var old = document.getElementById(collEnfants[j].id.toString());
+          node.removeChild(old);
+          if (j>0) j=j-1;
+        } else InitFilsAct(collEnfants[j]);
+
+      } else InitFilsAct(collEnfants[j]);
+
+      j++;
+      continuer = ((collEnfants.length > 0) && (j < collEnfants.length));
+    }
+  }
+}
+
+
+
+function InitFilsTaf(node,parent) {
+  var continuer = true;
+  if (node.hasChildNodes()) {
+    var collEnfants = node.childNodes;
+    var j = 0;
+    continuer = (collEnfants.length > 0);
+    while (continuer)
+    {
+      if (collEnfants[j].id) {
+        if (collEnfants[j].id.toString().startsWith("taf_date") ||
+            collEnfants[j].id.toString().startsWith("charge_travail") ||
+            collEnfants[j].id.toString().startsWith("taf_cours")) {
+          collEnfants[j].id = collEnfants[j].id.replace(/_0/g, '') + "_d" + nbTafAjoutes;
+        } else {
+
+        collEnfants[j].id = collEnfants[j].id + "_d" + nbTafAjoutes;
+      }
+
+        var regexp = /taf\d*/;
+        if (collEnfants[j].name && regexp.test(collEnfants[j].name.split(".")[0])) {
+          collEnfants[j].name = collEnfants[j].name.split(".")[0].substring(0,3) + nbTaf + "." + collEnfants[j].name.split(".")[1];
+        }
+
+        if (collEnfants[j].id.toString() == "taf_Ajout_document" + "_d" + nbTafAjoutes) {
+          var html = document.getElementById(collEnfants[j].id.toString()).innerHTML;
+          html = html.replace(/_0/g, "_0_d"+nbTafAjoutes);
+          document.getElementById(collEnfants[j].id.toString()).innerHTML = html;
+        }
+
+        if (collEnfants[j].id.toString().startsWith("taf_date") ||
+            collEnfants[j].id.toString().startsWith("taf_cours")) {
+
+        } else if (document.getElementById(collEnfants[j].id.toString()).tagName == "SELECT") {
+          collEnfants[j].value = null;
+        } else {
+          collEnfants[j].value = "";
+        }
+
+        if (collEnfants[j].id.toString().startsWith("taf_id")) {
+          collEnfants[j].value = "0";
+          collEnfants[j].id = "taf_id_" + (nbTaf);
+        }
+
+        if ((collEnfants[j].id.toString().startsWith('taf_fichier_ajoute_0_') && !collEnfants[j].id.toString().startsWith('taf_fichier_ajoute_0_d')) ||
+            (collEnfants[j].id.toString() == 'cke_taf_description_0_d'+nbTafAjoutes) ||
+            (collEnfants[j].id.toString().startsWith('taf_url_ajoute_0_') && !collEnfants[j].id.toString().startsWith('taf_url_ajoute_0_d')) ){
+          var old = document.getElementById(collEnfants[j].id.toString());
+          node.removeChild(old);
+          if (j>0) j=j-1;
+        } else InitFilsTaf(collEnfants[j]);
+      } else InitFilsTaf(collEnfants[j]);
+
+      j++;
+      continuer = ((collEnfants.length > 0) && (j < collEnfants.length));
+    }
+  }
+}
+
+function InitCloneDoc(node,parent) {
+  if (node.hasChildNodes()) {
+    var collEnfants = node.childNodes;
+    for (var j = 0; j < collEnfants.length; j++)
+    {
+      if (collEnfants[j].id)
+        collEnfants[j].id = collEnfants[j].id + "_" + nbDocAjoutes; //collEnfants[j].value = "";
+      if (collEnfants[j].name)
+        collEnfants[j].name = collEnfants[j].name + "_" + nbDocAjoutes;
+      InitCloneDoc(collEnfants[j]);
+    }
+  }
+}
+
+function InitCloneUrl(node,parent) {
+  if (node.hasChildNodes()) {
+    var collEnfants = node.childNodes;
+    for (var j = 0; j < collEnfants.length; j++)
+    {
+      if (collEnfants[j].id)
+        collEnfants[j].id = collEnfants[j].id + "_" + nbUrlAjoutes; //collEnfants[j].value = "";
+      InitCloneUrl(collEnfants[j]);
+    }
+  }
+}
+
+
+function listeCours(url,cdtId,evtId,actId,date,selectNext,id, valeur, libelle, data_charge){
+  var parameters = { "evtId":evtId,"cdtId":cdtId,"activiteId":actId,"date":date,"contexteCode":'MAI',"selectNext":selectNext };
+  //var idCombo = '#taf_cours';
+  var idCombo = 'taf_cours';
+  if (id.length >= 11) {
+    var num = id.toString().substring(10);
+    idCombo += "_d" + num;
+
+  } else if (id.length >= 10) {
+    var num = id.toString().substring(9);
+      idCombo +=  "_" +num;
+
+  }
+
+  jQuery.ajax({
+    type: 'POST',
+    data: parameters,
+    url: url,
+    success: function(data,textStatus){
+      //jQuery(idCombo).html(data);
+      fillComboOptions(idCombo, data);
+      listeActivitesAdjacentes(idCombo);
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+}
+
+// remplissage des options de combo en dhtml directement depuis le retour Ajax en json ( on ne passe plus par une gsp )
+function fillComboOptions(idCombo, data)
+{
+  var evenements = data.evenements;
+  var nbevenements=evenements.length;
+  var combo =document.getElementById(idCombo);
+  combo.innerHTML="";// reinit du combo avant remplissage...
+//<g:if test="${selectNext && evt.date > date && evt.selected}">
+  //selected
+  if(nbevenements>0)
+  {
+    for (var i=0;i<nbevenements;i++)
+    {
+      var evt = evenements[i];
+      var value =evt.evenementId;
+      var title=evt.activitesAdjacentes;
+      var dataCharge=evt.activitesAdjacentes;
+      var libelle=evt.libelle;
+      var option =  document.createElement("option");
+      option.setAttribute("value",value);
+      option.setAttribute("title",title);
+      option.setAttribute("data-charge",dataCharge);
+      option.innerText=libelle;
+
+      if( data.selectNext && (new Date(evt.date) > new Date(data.date)) && evt.selected )
+      {
+
+        option.setAttribute("selected","true");
+      }
+
+      combo.appendChild(option);
+    }
+  }
+  else
+  {
+    var option =  document.createElement("option");
+    option.setAttribute("value","0");
+    option.innerText="Pas de cours disponible";
+    combo.appendChild(option);
+  }
+}
+
+function listeActivitesAdjacentes(id) {
+  var idCharge = 'charge_travail';
+  var idCombo = 'taf_cours';
+  if (id.length >= 12) {
+    var num = id.toString().substring(11);
+    idCharge += "_d" + num;
+    idCombo += "_d" + num;
+  } else {
+    if (id.length >= 11) {
+      var num = id.toString().substring(10);
+      idCharge += "_" + num;
+      idCombo += "_" + num;
+    }
+  }
+
+  var combo = document.getElementById(idCombo);
+  var charge = document.getElementById(idCharge);
+  var valeur = combo.value;
+  var nbOptions   = combo.options.length;
+  if (valeur > 0 && nbOptions > 0) {
+    while (nbOptions-- >0) {
+      if (combo.options[nbOptions].value === valeur)
+        charge.innerHTML =
+            combo.options[nbOptions].getAttribute("data-charge").replace(/\n/g,'</br>');
+    }
+  }
+}
+
+
+function selectionTypeParDefaut(id, estMaison) {
+  var elmt = document.getElementById(id);
+  if (elmt.value == 'null')
+    for (var i = 0; i < elmt.options.length; i++)
+      if ((estMaison && (elmt.options[i].text.toLowerCase() == 'exercice')) ||
+          (!estMaison && (elmt.options[i].text.toLowerCase() == 'cours')))
+        elmt.selectedIndex = i;
+}
+
+
+function verifieTitre(idTitre, idActivite) {
+  var elmtTitre = document.getElementById(idTitre);
+  var elmtPopin = document.getElementById("popin_suppr");
+  if (elmtTitre.value == "") {
+    if (elmtPopin.style.display == 'none' || elmtPopin.style.display == '') {
+      if (idTitre.search("0_d")<0 && idActivite > 0) {
+        document.getElementById("act_a_suppr_id").value = idActivite;
+        document.getElementById("titre_a_suppr").value = idTitre;
+        elmtPopin.style.display = 'block';
+      }
+    }
+  }
+}
+
+function verifieDescription(description, idDescription, idActivite) {
+  if (description == "") {
+    if (idDescription.search("0_d")<0 && idActivite > 0) {
+      window.location.hash = 'popin_suppr';
+      document.getElementById("act_a_suppr_id").value = idActivite;
+      document.getElementById("titre_a_suppr").value = idDescription;
+    }
+  }
+}
+
+function supprimeActivite(url,suprrimer, idCdt, idEvenement) {
+  if (suprrimer) {
+    var idActivite = document.getElementById("act_a_suppr_id").value;
+    if (idActivite != "" && idActivite != "0") {
+      var parameters = { "id":idActivite };
+      $.ajax({
+        type: 'POST',
+        data: parameters,
+        url: url,
+        success: function(data,textStatus){
+          /*if (data == "1") document.forms[0].submit();*/
+          majEvent(vueCalendaire, idCdt, idEvenement, true);
+        },
+        error: function(XMLHttpRequest,textStatus,errorThrown){}
+      });
+    }
+    window.location.hash = '';
+  } else {
+    window.location.hash = '';
+    majEvent(vueCalendaire, idCdt, idEvenement, false);
+    if (document.getElementById('titre_a_suppr').value)
+      CKEDITOR.instances[document.getElementById('titre_a_suppr').value].focus();
+    return false;
+  }
+}
+
+
+function verifieActivites(idCdt, idEvenement) {
+  var formulaire = document.forms[0];
+  if (!formulaire) return;
+  for (var champ=0; champ < formulaire.elements.length; champ++) {
+    if ((formulaire.elements[champ].id.toString().startsWith("act_description") || formulaire.elements[champ].id.toString().startsWith("taf_description")) &&
+        formulaire.elements[champ].value == "") {
+      if (formulaire.elements[champ].id.toString().startsWith("act_description")) {
+        if (nbActAjoutes > 0){
+          window.location.hash = 'popin_enreg_act';
+          document.getElementById("titre_act_focus").value = formulaire.elements[champ].id;
+          return;
+        }
+      } else {
+        if (nbTafAjoutes > 0) {
+          window.location.hash = 'popin_enreg_taf';
+          document.getElementById("titre_taf_focus").value = formulaire.elements[champ].id;
+          return;
+        }
+      }
+    }
+    // Suppression des fichiers et/ou url vides :
+    if ((formulaire.elements[champ].id.toString().startsWith("act_fichier_ajoute_file_") ||
+            formulaire.elements[champ].id.toString().startsWith("act_url_ajoute_url_") ||
+            formulaire.elements[champ].id.toString().startsWith("taf_fichier_ajoute_file_") ||
+            formulaire.elements[champ].id.toString().startsWith("taf_url_ajoute_url_")
+        ) && formulaire.elements[champ].value == "") {
+      var parent = formulaire.elements[champ].parentNode;
+      parent.removeChild(formulaire.elements[champ]);
+    }
+  }
+  formSubmitEnregistrer(idCdt, idEvenement);
+  //formulaire.submit();
+  return true;
+}
+
+function formSubmitEnregistrer(idCdt, idEvenement, action, idEvtNew) {
+  //console.info("formSubmitEnregistrer");
+  for ( instance in CKEDITOR.instances )
+    CKEDITOR.instances[instance].updateElement();
+
+  // correctif pour Safari 11.1 : on supprime du formulaire chaque élement de type fichier
+  // quand aucun fichier n'a été téléchargé
+  $('#idForm').find("input[type='file']").each(function () {
+    if ($(this).get(0).files.length === 0) {
+      $(this).remove();
+    }
+  });
+
+  var data = new FormData( jQuery('form')[0]);
+  var refresh = modif;
+  if (modif) modif = false;
+  //console.info("modif = " + modif);
+
+  var opts ={
+    type: 'POST',
+    data:  data,
+    contentType: false,
+    processData: false,
+    async:false,
+    url: $('#idForm').attr('action'),
+    success: function(data,textStatus){
+      /*if (data == "1") document.forms[0].submit();*/
+      //majEvent(vueCalendaire, idCdt, idEvenement, true);
+      switch (action) {
+        case 0 :
+          majEvent(vueCalendaire, idCdt, idEvtNew ? idEvtNew : idEvenement, false);
+          break;
+        case -1 :
+          if (refresh) majEvent(vueCalendaire, idCdt, idEvtNew, false);
+          else coursPrecedent(idEvtNew);
+          break;
+        case 1 :
+          if (refresh) majEvent(vueCalendaire, idCdt, idEvtNew, false);
+          else coursSuivant(idEvtNew);
+          break;
+        //default :
+        //  majEvent(vueCalendaire, idCdt, idEvenement, true);
+        //  break;
+      }
+      //alert( $('#idForm').serialize());
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){
+      if (refresh) modif = true;
+    }
+  };
+
+  if(data.fake) {
+    // Make sure no text encoding stuff is done by xhr
+    opts.xhr = function() { var xhr = jQuery.ajaxSettings.xhr(); xhr.send = xhr.sendAsBinary; return xhr; }
+    opts.contentType = "multipart/form-data; boundary="+data.boundary;
+    opts.data = data.toString();
+  }
+
+  jQuery.ajax(opts);
+}
+
+function formSubmitSupprimerActivite(url,suprrimer, idCdt, idEvenement) {
+  for ( instance in CKEDITOR.instances )
+    CKEDITOR.instances[instance].updateElement();
+  $.ajax({
+    type: 'GET',
+    data:  $('#idForm').serialize(),
+    url: $('#idForm').attr('action'),
+    success: function(data,textStatus){
+      /*if (data == "1") document.forms[0].submit();*/
+     supprimeActivite(url,suprrimer, idCdt, idEvenement);
+      //alert( $('#idForm').serialize());
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+  //document.forms[0].submit();
+}
+
+// affichage de l'image de chargement en cours ...
+function showLoading()
+{
+  try // affichage loading.gif ( barre jaune ... )
+  {
+    var divLoading = document.createElement('div');
+    divLoading.id = 'loading';
+    divLoading.className = 'loading-indicator';
+    divLoading.style.paddingLeft='40px'
+    // variable globale loadingMessage initialisé dans la gsp
+    divLoading.innerText=loadingMessage;
+    window.document.body.appendChild(divLoading);
+  }
+  catch(e)
+  {  }
+}
+
+
+
+function formSubmitActiviteVueDetaillee(url,idActivite, idEvt, idCdt, date, contexte, idImage) {
+
+  // Mantis 56600
+
+  if( gActiviteVueDetailleeAlreadyClicked==true)
+  {
+    return;
+  }
+  gActiviteVueDetailleeAlreadyClicked=true;
+  showLoading();
+
+
+  for ( instance in CKEDITOR.instances )
+    CKEDITOR.instances[instance].updateElement();
+
+  var increment=-1;
+  try
+  {
+    if (idActivite==0||idImage.startsWith("img_vuedetaille_0_d")) // activité pas encore créée
+    {
+      var texteareaBodyId="";
+      if(idActivite==0 && idImage == "img_vuedetaille_0") // premier element vide
+      {
+        increment=0;
+        texteareaBodyId="_description_";
+      }
+      else
+      {
+        increment = parseInt(idImage.replace('img_vuedetaille_0_d',''));
+        texteareaBodyId="_description_0_d";
+      }
+
+      // récupération du réel incrément de l'activité ,
+      // car pb s'il existe déjà d'autres activités, le réel incrément n'est pas encore bon ...
+      // moyen de faire plus simple ? -> je sais pas ..;
+      var descriPrefixId="",descriPrefixName="",descrifieldName="";
+      if(contexte=="CLA")
+      {
+        descriPrefixId="act";
+        descriPrefixName="activite";
+        descrifieldName="act_description";
+      }
+      if(contexte=="MAI")
+      {
+        descriPrefixId="taf";
+        descriPrefixName="taf";
+        descrifieldName="taf_description";
+      }
+
+      var textareaActivite=document.getElementById(descriPrefixId+texteareaBodyId+increment);
+      if(textareaActivite.value=="")
+      {
+        // obligé d'avoir une description pour l'enregistrement par defaut avant acces avancée, necessaire pour avoir une sauvegarde ( sinon mmode suppression, pas terrible je trouve mais c'est pas moi qui ai choisi )
+        textareaActivite.value=defautVueCalendaireDescriptionMessage;
+      }
+      var textareaActiviteName = textareaActivite.name;
+      increment = parseInt( textareaActiviteName.replace(descriPrefixName,'').replace('.'+descrifieldName,''));
+
+    }
+  }
+  catch(e)
+  { // si on ne retrouve pas l'id on aurra une création au lieu d'une modification ... mais c'est moins grave qu'un plantage
+   }
+
+
+  var ajaxUrl= $('#idForm').attr('action');
+  if(ajaxUrl.indexOf("?")>0)
+  {
+    ajaxUrl+="&ajaxFormat=true";
+  }
+  else
+  {
+    ajaxUrl+="?ajaxFormat=true";
+  }
+
+  // correctif pour Safari 11.1 : on supprime du formulaire chaque élement de type fichier
+  // quand aucun fichier n'a été téléchargé
+  $('#idForm').find("input[type='file']").each(function () {
+    if ($(this).get(0).files.length === 0) {
+      $(this).remove();
+    }
+  });
+
+  var data = new FormData( jQuery('form')[0]);
+
+  $.ajax({
+    type: 'POST',
+    data:  data,
+    url: ajaxUrl,
+    contentType: false,
+    processData: false,
+    async:false,
+    success: function(data,textStatus){
+      /*if (data == "1") document.forms[0].submit();*/
+      // Mantis 56485, on viens de sauvegarder , on marque la variable globale modif à false pour éviter d'avoir une nouvelle sauvegarde lors du onbeforeunload du calendrier ...
+      modif=false;
+      if (idImage.startsWith("img_vuedetaille_0_d")|| (idActivite==0) ) // vient d'etre créé
+      {
+        if(data.result) {
+          if (data.result.activiteId != null) {
+            var activiteIds=data.result.activiteId;
+
+            var nbactivite = activiteIds.length;
+            var activiteId = null;
+            for (var i = 0; i < nbactivite; i++) {
+              activiteId = activiteIds[i];
+              if ( (contexte=="CLA") && (activiteId.source == "activite" + increment) ) {
+                idActivite = activiteId.target;
+                break;
+              }
+              if ( (contexte=="MAI") && (activiteId.source == "taf" + increment)) {
+                idActivite = activiteId.target;
+                break;
+              }
+            }
+
+          }
+        }
+      }
+      ActiviteVueDetaillee(url, idActivite, idEvt, idCdt, date, contexte, idImage)
+      //alert( $('#idForm').serialize());
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+  //document.forms[0].submit();
+}
+
+function verifierActivites(idCdt, idEvenement, action, idEvtNew, doc, win) {
+  //console.info("verifierActivites");
+  //console.info("modif = " + modif);
+  if (!modif) {
+    //console.info("action = " + action);
+    switch (action) {
+      case -1 :
+        //console.info("coursPrecedent");
+        coursPrecedent(idEvtNew);
+        return true;
+        break;
+      case 1 :
+        //console.info("coursSuivant");
+        coursSuivant(idEvtNew);
+        return true;
+        break;
+      default :
+        return true;
+        break;
+    }
+  }
+  var monDocument;
+  if (doc) monDocument = doc;
+  else monDocument = document;
+  var formulaire;
+  formulaire = monDocument.getElementById("idForm");
+  if (!formulaire) return true;
+  var maWindow;
+  if (win) {
+    maWindow = win;
+  } else {
+    maWindow = window;
+  }
+  // Suppression des fichiers et/ou url vides :
+  for (var champ=0; champ < formulaire.elements.length; champ++) {
+    if ((formulaire.elements[champ].id.toString().startsWith("act_fichier_ajoute_file_") ||
+            formulaire.elements[champ].id.toString().startsWith("act_url_ajoute_url_") ||
+            formulaire.elements[champ].id.toString().startsWith("taf_fichier_ajoute_file_") ||
+            formulaire.elements[champ].id.toString().startsWith("taf_url_ajoute_url_")
+        ) && formulaire.elements[champ].value == "") {
+      var parent = formulaire.elements[champ].parentNode;
+      if (formulaire.elements[champ].id.toString().startsWith("act_fichier_ajoute_file_") ||
+          formulaire.elements[champ].id.toString().startsWith("taf_fichier_ajoute_file_")) {
+        var btnSuppr = document.getElementById(formulaire.elements[champ].id.replace("file","img"));
+        parent.removeChild(btnSuppr);
+      }
+      parent.removeChild(formulaire.elements[champ]);
+      champ --;
+    }
+  }
+  var monNbActAjoutes = maWindow.nbActAjoutes;
+  var monNbTafAjoutes = maWindow.nbTafAjoutes;
+  // Verifications des descriptions :
+  for (var i in maWindow.CKEDITOR.instances) {
+    if (maWindow.CKEDITOR.instances[i].getData() == "") {
+      if (maWindow.CKEDITOR.instances[i].name.startsWith("act_")) {
+        if ((monNbActAjoutes > 0) || (monNbActAjoutes == 0 && !estActiviteClasseVide())) {
+          if(!(monNbActAjoutes == 0 && (document.getElementById("activite_id_0").value > 0))) {
+            maWindow.location.hash = "popin_enreg_act";
+            monDocument.getElementById("titre_act_focus").value = maWindow.CKEDITOR.instances[i].name;
+          }
+          return false;
+        }
+      } else {  //(CKEDITOR.instances[i].name.startsWith("taf_"))
+        if ((monNbTafAjoutes > 0) || (monNbTafAjoutes == 0 && !estActiviteMaisonVide())) {
+          if(!(monNbTafAjoutes == 0 && (document.getElementById("taf_id_0").value > 0))) {
+            maWindow.location.hash = "popin_enreg_taf";
+            monDocument.getElementById("titre_taf_focus").value = maWindow.CKEDITOR.instances[i].name;
+          }
+          return false;
+        }
+      }
+    }
+  }
+  formSubmitEnregistrer(idCdt, idEvenement, action, idEvtNew);
+  /*formulaire.submit();*/
+  return true;
+}
+
+function estActiviteClasseVide() {
+  //if ((document.getElementById("act_type_0").value > 0) ||
+  if ((document.getElementById("act_chapitre_0").value > 0) ||
+      (document.getElementById("activite_id_0").value > 0) ||
+      (document.getElementsByClassName("act_fichier_ajoute_file").length > 1) ||
+      (document.getElementsByClassName("act_url_ajoute_url").length > 1)) {
+    return false;
+  }
+  return true;
+}
+
+function estActiviteMaisonVide() {
+  //if ((document.getElementById("taf_type_0").value > 0) ||
+  if ((document.getElementById("taf_chapitre_0").value > 0) ||
+      (document.getElementById("taf_id_0").value > 0) ||
+      (document.getElementsByClassName("taf_fichier_ajoute_file").length > 1) ||
+      (document.getElementsByClassName("taf_url_ajoute_url").length > 1)) {
+    return false;
+  }
+  return true;
+}
+
+function majEvent(urlVueCalendaire, idCdt, idEvt, estSuppression) {
+  var rafraichir = false;
+  /*if (estSuppression) {
+    if (nbActMaison==0 && nbAct==1 &&  document.getElementById("activite_id_0")) {
+      if (document.getElementById("activite_id_0").value > 0) rafraichir = true;
+    }
+  } else {
+    rafraichir = true;
+    if (nbActMaison>0 && nbTaf==1 && CKEDITOR.instances.taf_description_0) {
+      rafraichir = (CKEDITOR.instances.taf_description_0.getData() != "");
+    }
+  }
+  alert(rafraichir);
+  if (rafraichir) {*/
+    var myurl = urlVueCalendaire + "?cdtId=" + idCdt + "&evtId=" + idEvt;
+    //alert(document.location.href);
+    //location = document.location.href;
+    parent.location.href = myurl;
+  //}
+}
+
+//function simulateClick(i) {
+//  var evt = new MouseEvent("click", {
+//    bubbles: true,
+//    cancelable: true,
+//    view: window
+//  });
+//  var id = "btn_"+i;
+//  var d = parent.document.getElementById(id); //element to click on
+//  var canceled = !d.dispatchEvent(evt);
+//  if(canceled)  // A handler called preventDefault
+//    console.info("canceled");
+//  else {  // None of the handlers called preventDefault
+//    console.info("not canceled");
+//}
+
+function coursPrecedent(idEvtPrev) {
+  var evt;
+  if (idEvtPrev > 0) {
+    if (document.createEvent) {
+      evt = document.createEvent("MouseEvent");
+      evt.initMouseEvent("click",true,true,window,0,0,0,0,0,false,false,false,false,0,null);
+    } else {
+      evt = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+    }
+    var d = parent.document.getElementById("btn_0");
+    var b = parent.scheduler.callEvent("onLightboxButton",["prev_button",d,evt]);
+  } else {
+    document.getElementById("precedent_img").setAttribute(
+        'style',
+        'opacity:0.3;cursor:default'
+    );
+  }
+}
+
+function coursSuivant(idEvtNext) {
+  var evt;
+  if (idEvtNext > 0) {
+    if (document.createEvent) {
+      evt = document.createEvent("MouseEvent");
+      evt.initMouseEvent("click",true,true,window,0,0,0,0,0,false,false,false,false,0,null);
+    } else {
+      evt = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+    }
+    var d = parent.document.getElementById("btn_1");
+    var b = parent.scheduler.callEvent("onLightboxButton",["next_button",d,evt]);
+  } else {
+    document.getElementById("suivant_img").setAttribute(
+        'style',
+        'opacity:0.3;cursor:default'
+    );
+  }
+}
+
+function verifieLimiteSemaine(idEvtPrev, idEvtNext) {
+  if (idEvtPrev == 0) {
+    document.getElementById("precedent_img").setAttribute(
+        'style',
+        'opacity:0.3;cursor:default'
+    );
+  }
+  if (idEvtNext == 0) {
+    document.getElementById("suivant_img").setAttribute(
+        'style',
+        'opacity:0.3;cursor:default'
+    );
+  }
+}
+
+function majEventDay(urlVueCalendaire, idCdt, idEvt, d) {
+  var url = urlVueCalendaire + "?cdtId=" + idCdt + "&evtId=" + idEvt +
+      "&estJournee=true";
+  var j = numJourPourDate(d);
+  if (j) url += "&jour=" + j;
+
+  if(idCdt == '' && idEvt == '') {
+    url = urlVueCalendaire + "?jour=" + j + "&dateJour=" + d +
+        "&estJournee=true";
+  }
+
+  if (url) parent.location.href = url;
+}
+
+function numJourPourDate(d) {
+  var dateJour = StringToDate(d);
+  var formateDate = scheduler.date.date_to_str("%l");
+  for (var i = 0; i < scheduler.locale.date.day_full.length; i++) {
+    if (formateDate(dateJour) == scheduler.locale.date.day_full[i])
+      return i;
+  }
+}
+
+
+function enregistreAct(enregistrer, idCdt, idEvenement) {
+  window.location.hash = '';
+  if (enregistrer) {
+    //document.forms[0].submit();
+    formSubmitEnregistrer(idCdt, idEvenement, 0);
+    return true;
+  } else {
+    CKEDITOR.instances[document.getElementById("titre_act_focus").value].focus();
+  }
+  return false;
+}
+
+
+function enregistreTaf(enregistrer, idCdt, idEvenement) {
+  window.location.hash = '';
+  if (enregistrer) {
+    //document.forms[0].submit();
+    formSubmitEnregistrer(idCdt, idEvenement, 0);
+    return true;
+  } else {
+    CKEDITOR.instances[document.getElementById("titre_taf_focus").value].focus();
+  }
+  return false;
+}
+
+
+function estTexteBrut(idTextArea) {
+  var description = document.getElementById(idTextArea).value;
+  return (texteBrut(description) == descriptionSansBaliseP(description));
+}
+
+
+function texteBrut(description) {
+  return description.replace(/<.[^<>]*>/gi, "");
+}
+
+
+function descriptionSansBaliseP(description) {
+  return description.replace(/<p>|<\/p>/gi, "");
+}
+
+function comboFormate(idSelect) {
+  if (document.getElementById(idSelect).value == "null") {
+    document.getElementById(idSelect).style.fontStyle = "italic";
+    document.getElementById(idSelect).style.color = "#8F8F8F";
+  } else {
+    document.getElementById(idSelect).style.fontStyle = "normal";
+    document.getElementById(idSelect).style.color = "#000000";
+  }
+  var oSelect = document.getElementById(idSelect);
+  var opts = oSelect.getElementsByTagName('option');
+  for (var i = 0; i < opts.length; i++) {
+    if (i==0) {
+      opts[i].style.fontStyle = "italic";
+      opts[i].style.color = "#8F8F8F";
+    } else {
+      opts[i].style.fontStyle = "normal";
+      opts[i].style.color = "#000000";
+    }
+  }
+}
+
+function changement() {
+  modif = true;
+  //console.info("Modification !");
+}
+
+function afficherActiviteTerminee(id, estTerminee, estParent, estEnseignant) {
+  if (estParent == 'true') {
+    if (estTerminee == 'true')
+      document.getElementById(id).innerHTML = "Activit&eacute; termin&eacute;e";
+    else
+      document.getElementById(id).innerHTML = "Activit&eacute; non faite";
+  } else if (estEnseignant == 'true') {
+    document.getElementById(id).style = "visibility:hidden;";
+  } else
+    document.getElementById(id).innerHTML = "activit&eacute; termin&eacute;e";
+}
+
+function terminerActivite(url, idActivite, checkBox, idActiviteTitre, idCdt, idEvenement, date) {
+  // Colorisation du titre de l'activite :
+  var terminee = checkBox.checked;
+  if (terminee)
+    document.getElementById(idActiviteTitre).style.color= "green";
+  else
+    document.getElementById(idActiviteTitre).style.color= "black";
+  // Enregistrement de l'activite terminee pour l'eleve ;
+  var parameters = { "id":idActivite, "isTermineeParEleve":terminee }
+  jQuery.ajax({
+    type: 'POST',
+    data: parameters,
+    url: url,
+    success: function(data,textStatus){
+      if(date === null) {
+        majEvent(vueCalendaire, idCdt, idEvenement, false);
+      } else {
+        majEventDay(vueCalendaire, idCdt, idEvenement, date);
+      }
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+}
+
+function formSubmitTerminerActivite(url, idActivite, checkBox, idActiviteTitre, idCdt, idEvenement, date) {
+  for ( instance in CKEDITOR.instances )
+    CKEDITOR.instances[instance].updateElement();
+  $.ajax({
+    type: 'GET',
+    data:  $('#idForm').serialize(),
+    url: $('#idForm').attr('action'),
+    success: function(data,textStatus){
+      terminerActivite(url,idActivite, checkBox, idActiviteTitre, idCdt, idEvenement, date);
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+}
+
+function DeplierReplierDocs(idImg, idDoc) {
+  var docs = document.getElementsByClassName("document_ressource espace_haut");
+  for (var i = 0; i<docs.length; i++) {
+    if (docs[i].id.toString().startsWith(idDoc)) {
+      if (docs[i].style.display == 'none') {
+        document.getElementById(docs[i].id).style.display = 'block';
+      }
+      else {
+        document.getElementById(docs[i].id).style.display = 'none';
+      }
+    }
+  }
+  if (document.getElementById(idImg).getAttribute('src') == '../js/lib/dhtmlx/imgs/replier.png') {
+    document.getElementById(idImg).setAttribute('src','../js/lib/dhtmlx/imgs/deplier.png');
+    //document.getElementById(idImg).setAttribute('title','D&eacute;plier le(s) document(s)');
+    document.getElementById(idImg).setAttribute('title','Déplier le(s) document(s)');
+  }
+  else {
+    document.getElementById(idImg).setAttribute('src','../js/lib/dhtmlx/imgs/replier.png');
+    document.getElementById(idImg).setAttribute('title','Replier le(s) document(s)');
+  }
+}
+
+//window.onload = function () {
+//  window.onbeforeunload = verifierActivites();
+//};
+//window.onbeforeunload = verifierActivites();
+//window.onbeforeunload = function() {
+//  verifierActivites();
+//};
+
+//window.onBeforeUnload = console.info("onBeforeUnload");
+//window.onUnload = console.info("onUnload");
+
+
+
+// Some common IE shims... indexOf, startsWith, trim
+/*
+ Really? IE8 Doesn't have .indexOf
+ */
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
+    "use strict";
+    if (this === null) {
+      throw new TypeError();
+    }
+    var t = Object(this);
+    var len = t.length >>> 0;
+
+    if (len === 0) {
+      return -1;
+    }
+    var n = 0;
+    if (arguments.length > 1) {
+      n = Number(arguments[1]);
+      if (n != n) { // shortcut for verifying if it's NaN
+        n = 0;
+      } else if (n !== 0 && n != Infinity && n != -Infinity) {
+        n = (n > 0 || -1) * Math.floor(Math.abs(n));
+      }
+    }
+    if (n >= len) {
+      return -1;
+    }
+    var k = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
+    for (; k < len; k++) {
+      if (k in t && t[k] === searchElement) {
+        return k;
+      }
+    }
+    return -1;
+  };
+}
+
+/*
+ IE Doesn't have a .startsWith either?
+ */
+if (!String.prototype.startsWith) {
+  String.prototype.startsWith = function (str){
+    return this.lastIndexOf(str, 0) === 0;
+  };
+}
+
+// IE < 9 doesn't have a trim() for strings
+if (!String.prototype.trim) {
+  String.prototype.trim = function () {
+    return this.replace(/^\s+|\s+$/g, '');
+  };
+}
+
+
+//uniquement au chargement de la page
+function listeCoursForAllActivities()
+{
+  var activiteIds=""
+  for(var i=0;i<nbTaf;i++)
+  {
+    if(activiteIds!="")
+    {
+      activiteIds=activiteIds+",";
+    }
+    activiteIds=activiteIds+tafDateInputIdMap[i];
+  }
+
+  var selectNext=true;
+  var parameters = { "evtId":idEvenement,"cdtId":idCdt,"activiteIds":activiteIds,"date":dateStr,"contexteCode":'MAI',"selectNext":selectNext };
+
+  jQuery.ajax({
+    type: 'POST',
+    data: parameters,
+    url: getEvtsCompatiblesForActivities,
+    success: function(data,textStatus){
+      for(var i=0;i<nbTaf;i++)
+      {
+        inputid='taf_date'+i;
+        activiteid=tafDateInputIdMap[i];
+        var idCombo = 'taf_cours_'+i;
+
+        var activitesEvenementsInfos = data.activitesEvenementsInfos;
+        for(var j=0;i<activitesEvenementsInfos.length;j++)
+        {
+         if  (activitesEvenementsInfos[j].activiteid==activiteid)
+         {
+           var evtsdata = activitesEvenementsInfos[i];
+           fillComboOptions(idCombo, evtsdata);
+           listeActivitesAdjacentes(idCombo);
+           break;
+         }
+        }
+
+      }
+
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown){}
+  });
+
+
+}

@@ -1,0 +1,855 @@
+var dhxLayout = null;
+var currentId = null;
+
+function init() {
+
+  scheduler.config.multi_day = true;
+
+  scheduler.config.first_hour = eliot.textes.vuecalendaire.ConfigServeur.data.heureDebut; //8;
+  scheduler.config.last_hour = eliot.textes.vuecalendaire.ConfigServeur.data.heureFin;  //18;
+
+  scheduler.xy.menu_width = 0;
+  scheduler.config.details_on_dblclick = false;
+  scheduler.config.details_on_create = true;
+
+  var tooltipDateFormat = scheduler.date.date_to_str("%H:%i");
+  scheduler.templates.tooltip_text = function(start,end,event) {
+    return "<b>" + tooltipDateFormat(start) + "</b> - " +
+        "<b>" + tooltipDateFormat(end) + "</b><br/>" +
+        event.text;
+  };
+
+  // Enregistrement auto au changement de semaine :
+  var refresh = false;
+  scheduler._click.dhx_cal_prev_button = function() {
+    //console.info("dhx_cal_prev_button");
+    if (document.getElementById("frame_detail"))
+      refresh = document.getElementById("frame_detail").contentWindow.modif;
+    if (enregistreSiModif()) {
+      if (refresh) scheduler.clearAll();
+      scheduler._click.dhx_cal_next_button(0,-1,1);
+    }
+  };
+  scheduler._click.dhx_cal_next_button = function(dummy,step,noSave) {
+    //console.info("dhx_cal_next_button");
+    if (!noSave) {
+      if (document.getElementById("frame_detail"))
+        refresh = document.getElementById("frame_detail").contentWindow.modif;
+      if (!enregistreSiModif()) return;
+      else if (refresh) scheduler.clearAll();
+    }
+    scheduler.setCurrentView(scheduler.date.add( //next line changes scheduler._date , but seems it has not side-effects
+        scheduler.date[scheduler._mode+"_start"](scheduler._date),(step||1),scheduler._mode));
+  };
+  scheduler._click.dhx_cal_today_button = function() {
+    //console.info("dhx_cal_today_button");
+    if (document.getElementById("frame_detail"))
+      refresh = document.getElementById("frame_detail").contentWindow.modif;
+    if (enregistreSiModif()) {
+      if (refresh) scheduler.clearAll();
+      if (scheduler.callEvent("onBeforeTodayDisplayed", [])) {
+        scheduler.setCurrentView(scheduler._currentDate());
+      }
+    }
+  };
+
+  scheduler.attachEvent("onClick", function(id, e){
+    var idCdtEvt = id.split("_");
+    var idEvt = null;
+    if(idCdtEvt.length == 2)
+      idEvt = idCdtEvt[1];
+    if(enregistreSiModif(idEvt)) {
+      enteteJourReinit();
+      eventSelect(id, true);
+    }
+    return false;
+  });
+
+  //scheduler.attachEvent("onEmptyClick", function(date, e){
+  //  var id = scheduler.getState().lightbox_id;
+  //  //console.log(id);
+  //  eventSelect(id,false); // /!\ ne garde pas l'evenement selectionne !? /!\
+  //  return false;
+  //});
+
+  //scheduler.config.readonly_form = true;
+  scheduler.config.readonly = true; // desactive le dblclick, resize, ...
+
+  scheduler.locale.labels.section_template = 'Details';
+  scheduler.locale.labels.section_aec = '';
+  scheduler.locale.labels.section_tam = 'Travail a la maison';
+
+  scheduler.config.lightbox.sections = [
+    //{name: "aec", height: 450, type: "template", map_to: "aec_template"}
+    //{name: "aec", height: getHeight() - 70, type: "template", map_to: "aec_template"}
+    {name: "aec", height: getHeight() - 10, type: "template", map_to: "aec_template"}
+  ];
+
+  scheduler.attachEvent("onBeforeLightbox", function(id) {
+    //console.info("onBeforeLightbox");
+
+    var ev = scheduler.getEvent(id);
+    ev.aec_template = "<iframe id='frame_detail' frameBorder='0' width='99%' height='100%'></iframe>";
+
+    return true;
+  });
+
+  scheduler.attachEvent("onLightbox", function(id) {
+    currentId = id;
+
+    var ev = scheduler.getEvent(id);
+    ev.aec_template = "<iframe id='frame_detail' frameBorder='0' width='99%' height='100%'></iframe>";
+
+    return true;
+  });
+
+  scheduler.attachEvent("onLightbox", function(id) {
+    currentId = id;
+
+    var ev = scheduler.getEvent(id);
+    var url;
+    var param = "";
+    if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant") {
+      url = eliot.textes.vuecalendaire.ConfigServeur.url.detail;
+      param = "&enseignant=true";
+    } else {
+      url = eliot.textes.vuecalendaire.ConfigServeur.url.detailEleve;
+      if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent") {
+        param = "&parent=true";
+        var idPersonne = document.getElementById("elevesListe").value;
+        param += "&idEleve=" + idPersonne;
+      } else {
+        param = "&parent=false"
+      }
+    }
+
+
+    var lightbox =  scheduler.getLightbox();
+    // window.dhxLayout.cells("a") : correspond à la partie de gauche, la partie 'Agenda'
+    // window.dhxLayout.cells("b") : correspond à la partie de droite, la partie 'Détails'
+    window.dhxLayout.cells("b").attachObject(lightbox);
+
+    // la définition de la source de l'iframe va lancer l'appel à l'action de controller définie dans la variable 'url'
+    document.getElementById("frame_detail").src =
+        url +
+        "?" + "eventId=" + ev.id +
+        "&" + "eventIdPrev=" + ev.idPrev +
+        "&" + "eventIdNext=" + ev.idNext +
+        param +
+        "&" + "label=" + encodeURIComponent(ev.titre);
+
+    // Infobulles sur les boutons "<<" et ">>" :
+    var boutons = document.getElementsByClassName("prev_button_set");
+    for (var i=0; i<boutons.length; i++) {
+      boutons[i].setAttribute('title','Cours pr\xE9c\xE9dent');
+    }
+    boutons = document.getElementsByClassName("next_button_set");
+    for (var i=0; i<boutons.length; i++) {
+      boutons[i].setAttribute('title','Cours suivant');
+    }
+  });
+
+  scheduler.config.xml_date = "%Y-%m-%d %H:%i";
+  scheduler.config.day_date = "%D %j %M";
+  scheduler.config.default_date = "%j %M %Y";
+  if(eliot.textes.vuecalendaire.ConfigServeur.data.nbJoursSemaine==7){
+    eliot.textes.vuecalendaire.ConfigServeur.data.nbJoursSemaine = 6;
+    scheduler.config.start_on_monday = false;
+  }
+
+
+  scheduler.attachEvent("onTemplatesReady",function() {
+    //work week
+    scheduler.date.add_week=function(date,inc) {
+      return scheduler.date.add(date,inc*7,"day");
+    };
+    scheduler.date.get_week_end=function(date) {
+      //return scheduler.date.add(date, 5, "day");
+      return scheduler.date.add(date, +eliot.textes.vuecalendaire.ConfigServeur.data.nbJoursSemaine, "day");
+    };
+  });
+
+  scheduler.config.buttons_left = ["prev_button","next_button"];//,"dhx_save_btn","dhx_cancel_btn"];
+  //scheduler.config.buttons_left = [];
+  scheduler.config.buttons_right=[];
+
+  scheduler.locale.labels["prev_button"] = "<<";
+  scheduler.locale.labels["next_button"] = ">>";
+  //scheduler.locale.labels["save_button"] = "Enregistrer";
+
+  scheduler.attachEvent("onLightboxButton", function(button_id, node, e) {
+    var id;
+    if(button_id == "prev_button") {
+      id = prevEvent(scheduler.getEvents(),scheduler.getState().lightbox_id);
+      eventSelect(id,true);
+    }
+    if(button_id == "next_button") {
+      id = nextEvent(scheduler.getEvents(),scheduler.getState().lightbox_id);
+      eventSelect(id,true);
+    }
+    //if(button_id == "save_button") enregistrer();
+  });
+
+  function prevEvent(evs, currentid){
+    var eventId = -1;
+    evs.sort(function(a,b){ return (a.start_date > b.start_date ? 1 : -1); });
+    for(var i=1 ; i<evs.length ; i++){  //goes through all events to find the one needed
+      if (evs[i].id == currentid)
+        eventId = evs[i-1].id;  // -> 2
+    }
+    return eventId;
+  }
+
+  function nextEvent(evs, currentid){
+    var eventId = -1;
+    evs.sort(function(a,b){ return (a.start_date > b.start_date ? 1 : -1); });
+    for(var i=0 ; i<evs.length-1 ; i++){  //goes through all events to find the one needed
+      if (evs[i].id == currentid)
+        eventId = evs[i+1].id;  // -> 2
+    }
+    return eventId;
+  }
+
+  //********************** Colorisation
+  scheduler.templates.event_class=function(start, end, event) {
+    var css = "";
+    // if event has subject property then special class should be assigned :
+    //if (event.subject)
+    //  css += "event_" + event.subject;
+    //if(event.id == scheduler.getState().select_id)
+    //  css += " selected";
+    // Afficher une image dans l'evenement :
+    if(event.home == true) {
+      if (eliot.textes.vuecalendaire.ConfigServeur.data.acces != "enseignant" &&
+          (event.hasActivite == true && event.activitesMaisonTerminees == true))
+        css += " homeChecked";
+      else
+        css += " home";
+    }
+    /////////////////////////////////////////////////
+    // le cours n'a pas d'activité ou a seulement des travaux maison
+    if(event.hasActivite == false || (event.hasActivite == true && event.homeonly == true)) {
+      if (event.home == true) {
+          css += " sansActiviteHome";
+      } else {
+        css += " sansActivite"
+      }
+    } else {  //le cours a une activité classe
+      if(event.home == true) {
+          css += " avecActiviteHome";
+      } else {
+        css += " avecActivite"
+      }
+    }
+
+    if(event.id == scheduler.getState().select_id)  // evenement selectionne :
+      css += "Selected";
+    /////////////////////////////////////////////////
+
+    /* uniquement devoir à la maison (l'activité n'a pas de fond bleu et la maison est peinte ) */
+    if(event.homeonly == true)
+    {
+      css += " homeonly";
+    }
+    return css; // default return
+  };
+
+  scheduler.xy.nav_height=38;
+
+  function block_readonly(id){
+    if (!id) return true;
+    return !this.getEvent(id).readonly;
+  }
+
+  scheduler.attachEvent("onBeforeDrag",block_readonly);
+  scheduler.config.mark_now = true;
+
+  dhxLayout = new dhtmlXLayoutObject({
+//    parent: document.body,    // id/object, parent container where layout will be located
+//    parent: eliot.textes.vuecalendaire.Constantes.composantId.layoutObj,    // id/object, parent container where layout will be located
+    parent: 'idLayoutObj',    // id/object, parent container where layout will be located
+    pattern: "2U",       // string, layout's pattern
+    skin: "dhx_terrace"  // string, optional,"dhx_skyblue","dhx_web","dhx_terrace"
+  });
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Date a laquelle est initialisee le scheduler : par defaut = date du jour.
+  // Si la date est hors limites de l'annee scolaire en cours, on se positionne
+  // soit au debut soit a la fin de l'annee scolaire :
+  var format = scheduler.date.date_to_str("%Y-%m-%d");
+  var dateInitiale = new Date();
+  if (eliot.textes.vuecalendaire.ConfigServeur.data.date)
+    dateInitiale = new Date(eliot.textes.vuecalendaire.ConfigServeur.data.date);
+  var strDateDuJour = format(new Date(dateInitiale.getFullYear(),
+      dateInitiale.getMonth(), dateInitiale.getDate()));
+  var dernierJour = eliot.textes.vuecalendaire.ConfigServeur.data.dernierJour;
+  var premierJour = eliot.textes.vuecalendaire.ConfigServeur.data.premierJour;
+  if (strDateDuJour > dernierJour.substring(0,10)) {
+    //dateInitiale = eliot.textes.vuecalendaire.ConfigServeur.data.dernierJour;
+    dateInitiale = new Date(dernierJour.substring(0,4),
+        dernierJour.substring(5,7) - 1, dernierJour.substring(8,10));
+  } else if (strDateDuJour < premierJour.substring(0,10)) {
+    //dateInitiale = eliot.textes.vuecalendaire.ConfigServeur.data.premierJour;
+    dateInitiale = new Date(premierJour.substring(0,4),
+        premierJour.substring(5,7) - 1, premierJour.substring(8,10));
+  }
+  //////////////////////////////////////////////////////////////////////////////
+
+  dhxLayout.cells("a").setText("Agenda");
+  dhxLayout.cells("a").hideHeader();
+  //dhxLayout.cells("a").attachScheduler(new Date(), "week");//, "scheduler_here");
+  dhxLayout.cells("a").attachScheduler(dateInitiale, "week");//, "scheduler_here");
+  dhxLayout.cells("b").setText("Details");
+  dhxLayout.cells("b").hideHeader();
+
+  //////////////////////////////////////////////////////////////////////////////
+  limiteAnneeScolaireAtteinte(scheduler.getState().mode,new Date(),dateInitiale);
+  //////////////////////////////////////////////////////////////////////////////
+
+//////////////////   CHOISIR ENTRE 2 MODES DE CHARGEMENT :   ///////////////////
+
+  // MODE DE CHARGEMENT N°1 :
+  // Chargement gere par le scheduler (une fois la periode chargee, elle n'est plus rechargee) :
+  scheduler.setLoadMode("week"); // "week" ou "month"
+
+  // MODE DE CHARGEMENT N°2 :
+  // Chargement a chaque changement de semaine (la periode est rechargee a chaque fois) :
+  /*  var formate = scheduler.date.date_to_str("%Y-%m-%d %H:%i");
+   scheduler.attachEvent("onViewChange",function(new_mode,new_date) {
+   var debut = formate(new Date(new_date.getFullYear(), new_date.getMonth(), new_date.getDate())).substring(0,10);
+   var dateFin = new Date(new_date);
+   dateFin.setDate(new_date.getDate()+6);
+   var fin = formate(dateFin).substring(0,10);
+   var url = eliot.textes.vuecalendaire.ConfigServeur.url.accesUrl+"?from="+debut+"&to="+fin+"";
+   scheduler.load(url, "json");
+
+   afficheProchainCours();
+
+   return true;
+   });
+   var debut = formate(new Date(scheduler.getState().min_date.getFullYear(), scheduler.getState().min_date.getMonth(), scheduler.getState().min_date.getDate()));
+   var fin = formate(new Date(scheduler.getState().max_date.getFullYear(), scheduler.getState().max_date.getMonth(), scheduler.getState().max_date.getDate()));
+   debut = debut.substring(0,10);
+   fin = fin.substring(0,10);
+   var url = eliot.textes.vuecalendaire.ConfigServeur.url.accesUrl+"?from="+debut+"&to="+fin+"";
+   */
+////////////////////////////////////////////////////////////////////////////////
+
+  // chargement des evenements (scheduler.load) :
+  chargeEvenements();
+
+  scheduler.attachEvent("onBeforeViewChange",function(old_mode,old_date,new_mode,new_date) {
+    var resultat = true;
+    // Dates de debut ou fin d'annee scolaire atteintes : Griser les boutons "semaine suivante" et "semaine precedente" ("<" et ">") :
+    resultat = limiteAnneeScolaireAtteinte(new_mode,old_date,new_date);
+
+    return resultat;
+  });
+
+  scheduler.attachEvent("onBeforeTodayDisplayed",function() {
+    return (document.getElementsByClassName('dhx_cal_today_button')[0].style.cursor != "default")
+  });
+
+  scheduler.attachEvent("onXLE",function() {
+    // Infobulles sur les boutons "<" et ">" :
+    var boutons = document.getElementsByClassName("dhx_cal_prev_button");
+    for (var i=0; i<boutons.length; i++) {
+      boutons[i].setAttribute('title','Semaine pr\xE9c\xE9dente');
+    }
+    boutons = document.getElementsByClassName("dhx_cal_next_button");
+    for (var i=0; i<boutons.length; i++) {
+      boutons[i].setAttribute('title','Semaine suivante');
+    }
+    // Identification des jours qui possèdent des activités
+    initDaysWithActivity();
+    // Gestion du pointeur de la souris au survol de l'entête des jours :
+    gestionEnteteJour();
+    // Selection et affichage du prochain cours :
+    afficheProchainCours();
+  });
+
+  scheduler.attachEvent("onViewChange",function(new_mode,new_date) {
+    // Identification des jours qui possèdent des activités
+    initDaysWithActivity();
+    // Gestion du pointeur de la souris au survol de l'entête des jours :
+    gestionEnteteJour();
+    // Selection et affichage du prochain cours :
+    afficheProchainCours();
+  });
+
+  // definition des dates de debut et fin pour la vue "Agenda" (scheduler.config.agenda_start et scheduler.config.agenda_end) :
+  var dateFin = new Date();
+  dateFin.setDate(dateFin.getDate()+30);
+  scheduler.config.agenda_start = new Date();	// de la date du jour J
+  scheduler.config.agenda_end = dateFin;		// a J+30
+  scheduler.config.drag_lightbox=false;
+
+  scheduler.showCover = function(box){
+    scheduler.show_cover();
+  };
+
+}
+
+function enregistreSiModif(idEvtNew) {
+  var enregOk = true;
+  if (document.getElementById("frame_detail") &&
+      document.getElementById("frame_detail").contentWindow.modif == true) {
+    //console.info("Modif !");
+    var idCdt = document.getElementById("frame_detail").contentWindow.idCdt;
+    var idEvenement = document.getElementById("frame_detail").contentWindow.idEvenement;
+    if(idEvtNew)
+      enregOk = document.getElementById("frame_detail").contentWindow.verifierActivites(idCdt, idEvenement, 0, idEvtNew);
+    else
+      enregOk = document.getElementById("frame_detail").contentWindow.verifierActivites(idCdt, idEvenement, 0);
+  }
+  return enregOk;
+}
+
+function chargeEvenements() {
+  var url = eliot.textes.vuecalendaire.ConfigServeur.url.accesUrl;
+  scheduler.config.show_loading = true;
+  if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant") {
+    scheduler.load(url + "?enseignant=true", "json");
+  } else {
+    if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent") {
+      var idPersonne = document.getElementById("elevesListe").value;
+      scheduler.load(url + "?parent=true&idEleve="+idPersonne, "json");
+    } else {
+      scheduler.load(url, "json");
+    }
+  }
+}
+
+function initDaysWithActivity() {
+  if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "eleve" ||
+      eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent" ||
+      eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant") {
+    var url = eliot.textes.vuecalendaire.ConfigServeur.url.initDays;
+
+    var formate = scheduler.date.date_to_str("%Y-%m-%d %H:%i");
+
+    var minDate = scheduler.getState().min_date;
+    var maxDate = scheduler.getState().max_date;
+    var firstDayOfWeek = formate(new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()));
+    var lastDayOfWeek = formate(new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate()));
+    var estParent = (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent");
+    var estEnseignant = (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant");
+
+    var parameters = {
+      "firstDayOfWeek": firstDayOfWeek,
+      "lastDayOfWeek": lastDayOfWeek,
+      "parent": estParent,
+      "enseignant": estEnseignant
+    };
+    if(estParent) {
+      var idPersonne = document.getElementById("elevesListe").value;
+      parameters["idEleve"] = idPersonne;
+    }
+
+    $.ajax({
+      type: 'GET',
+      data: parameters,
+      url: url,
+      async: false,
+      success: function (data, textStatus) {
+        eliot.textes.vuecalendaire.ConfigServeur.data.listeJoursWithActivitesMaison =
+            data.listeJoursWithActivitesMaison;
+      },
+      error: function (XMLHttpRequest, textStatus, errorThrown) {
+      }
+    });
+    enteteJourReinit();
+    // ajout de la colorisation en bleu de l'entête des journees si présence d'activites
+    /*var elmts = document.getElementsByClassName("dhx_scale_bar");
+    for (var i=0; i<elmts.length ; i++) {
+      hasActivitesForDay(elmts[i]);
+    }*/
+  }
+}
+
+function gestionEnteteJour() {
+  // Gestion du pointeur de souris au survol de l'entête des journees :
+  var elmts = document.getElementsByClassName("dhx_scale_bar");
+  for (var i=0; i<elmts.length ; i++) {
+    /*if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant")
+      elmts[i].style.cursor = "default";
+    else*/
+      elmts[i].style.cursor = "pointer";
+  }
+}
+
+function afficheProchainCours() {
+  var cdtId = eliot.textes.vuecalendaire.ConfigServeur.data.cdtId;
+  var evtId = eliot.textes.vuecalendaire.ConfigServeur.data.evtId;
+  var date = eliot.textes.vuecalendaire.ConfigServeur.data.date;
+  var estJournee = eliot.textes.vuecalendaire.ConfigServeur.data.estJournee;
+  var jour = eliot.textes.vuecalendaire.ConfigServeur.data.jour;
+  var aujourdhui;
+
+  // Si on revient de la vue detaillee, on se positionne sur l'evt de depart :
+  if (cdtId > 0 && evtId > 0 && date) {
+    scheduler.updateView(new Date(date));
+    gestionEnteteJour();
+    eliot.textes.vuecalendaire.ConfigServeur.data.cdtId = 0;
+    eliot.textes.vuecalendaire.ConfigServeur.data.cdtId = 0;
+
+  }
+  if (date) aujourdhui = new Date(date); else aujourdhui = new Date();
+
+  // si on doit selectionner une journee complete :
+  if (estJournee == 'true') {
+
+    var j;
+    if (jour && jour >= 0) j = "dhx_scale_bar_day_" + (jour-1);
+    showDay(aujourdhui,j);
+
+  } else {  // sinon on selectionne le prochaine cours :
+
+    var min = scheduler.getState().min_date;
+    var max = scheduler.getState().max_date;
+    if (scheduler.getState().min_date <= aujourdhui &&
+        aujourdhui <= scheduler.getState().max_date) {min = aujourdhui;}
+    //evs : list of all oncoming events :
+    var evs = scheduler.getEvents(min, max);
+    // s'il n'y a pas de cours entre aujourd'hui et la fin de la semaine, on prend
+    // tous les cours de la semaine et on se positionne sur le dernier :
+    if (evs.length < 1 && aujourdhui > scheduler.getState().min_date) {
+      min = scheduler.getState().min_date;
+      evs = scheduler.getEvents(min, max);
+      evs.sort(function(a,b){ return (a.start_date < b.start_date ? 1 : -1); });
+    } else
+      evs.sort(function(a,b){ return (a.start_date > b.start_date ? 1 : -1); });
+    // charger le prochain (ou le dernier) evenement :
+    if (evs.length > 0) {
+      eventSelect(evs[0].id,true);
+    } else { // ou le fermer si aucun :
+      scheduler.hideCover(scheduler.getLightbox());
+    }
+
+  }
+
+    eliot.textes.vuecalendaire.ConfigServeur.data.estJournee = false;
+}
+
+function eventSelect(id,showLightbox) {
+  scheduler.select(id);
+  if (showLightbox) {
+    scheduler.showLightbox(id);
+    //scheduler.hideCover();
+  }
+  eliot.textes.vuecalendaire.ConfigServeur.data.cdtId = 0;
+  eliot.textes.vuecalendaire.ConfigServeur.data.evtId = 0;
+  eliot.textes.vuecalendaire.ConfigServeur.data.date = "";
+}
+
+function limiteAnneeScolaireAtteinte(new_mode,old_date,new_date) {
+  var debutPeriodeCour, finPeriodeCour, debutPeriodeSuiv, finPeriodePrec;
+  var bloquePrec, bloqueSuiv;
+  var styleAuj = '';
+  var stylePrec = '';
+  var styleSuiv = '';
+  var dateTemp = new Date(new_date);
+  var formate = scheduler.date.date_to_str("%Y-%m-%d");
+  var avance = (new_date > old_date);
+
+  // semaine/mois qui va être affiche(e) :
+  debutPeriodeCour = formate(new_date);
+  finPeriodeCour = formate(dateFinPeriode(new_date, new_mode));
+
+  // semaine/mois qui suit celle/celui qui va être affiche(e) :
+  dateTemp = dateFinPeriode(new_date, new_mode);
+  dateTemp.setDate(dateTemp.getDate()+1);
+  debutPeriodeSuiv = formate(dateTemp);
+
+  // semaine/mois qui precede celle/celui qui va être affiche(e) :
+  dateTemp = new Date(new_date);
+  dateTemp.setDate(dateTemp.getDate()-1);
+  finPeriodePrec = formate(dateTemp);
+
+  if (getWidth() < 1000) {
+    styleAuj += 'font-size: 10px;';
+    document.getElementsByClassName('dhx_cal_date')[0].setAttribute('style','font-size: 17px;');
+  }
+  // Inactiver la fleche suivante (">") ou precedente ("<") si on a atteint la date de debut ou fin de l'annee scolaire :
+  dateTemp = new Date();
+  if (formate(dateTemp) < eliot.textes.vuecalendaire.ConfigServeur.data.premierJour ||
+      formate(dateTemp) > eliot.textes.vuecalendaire.ConfigServeur.data.dernierJour)
+    styleAuj += 'opacity:0.3;cursor:default;text-decoration:none';
+  if (finPeriodePrec < eliot.textes.vuecalendaire.ConfigServeur.data.premierJour)
+    stylePrec = 'opacity:0.3;cursor:default';
+  if (debutPeriodeSuiv > eliot.textes.vuecalendaire.ConfigServeur.data.dernierJour)
+    styleSuiv = 'opacity:0.3;cursor:default';
+  document.getElementsByClassName('dhx_cal_today_button')[0].setAttribute('style',styleAuj);
+  document.getElementsByClassName('dhx_cal_prev_button')[0].setAttribute('style',stylePrec);
+  document.getElementsByClassName('dhx_cal_next_button')[0].setAttribute('style',styleSuiv);
+
+  // Ne pas changer de vue (de semaine) si on a atteint la date de debut ou fin de l'annee scolaire :
+  bloquePrec = (finPeriodeCour < eliot.textes.vuecalendaire.ConfigServeur.data.premierJour);
+  bloqueSuiv = (debutPeriodeCour > eliot.textes.vuecalendaire.ConfigServeur.data.dernierJour);
+  //return !(bloquePrec || bloqueSuiv);
+  return ((avance && !bloqueSuiv) || (!avance && !bloquePrec));
+}
+
+function dateFinPeriode(debut, mode) {
+  var dateTemp = new Date(debut);
+  switch (mode) {
+    case "week" :
+      dateTemp.setDate(debut.getDate()+6);  // plus 6 jours
+      break;
+    case "month" :
+      dateTemp.setMonth(dateTemp.getMonth(debut)+1);  // plus 1 mois
+      dateTemp.setDate(dateTemp.getDate()-1);         // moins 1 jour
+      break;
+  }
+  return dateTemp;
+}
+
+function dateDebutPeriode(fin, mode) {
+  var dateTemp = new Date(fin);
+  switch (mode) {
+    case "week" :
+      dateTemp.setDate(fin.getDate()-6);  // moins 6 jours
+      break;
+    case "month" :
+      dateTemp.setMonth(dateTemp.getMonth(fin)-1);  // moins 1 mois
+      dateTemp.setDate(dateTemp.getDate()+1);       // plus 1 jour
+      break;
+  }
+  return dateTemp;
+}
+
+//function showDay(d){
+//  //alert(scheduler._lightbox.parentNode)
+//  dhxLayout.cells("b").attachURL("day.gsp?date="+d, true);
+//  scheduler._lightbox=null;
+//  //alert(scheduler._lightbox.parentNode)
+//}
+
+function showDay(d,divId){
+  //if (eliot.textes.vuecalendaire.ConfigServeur.data.acces != "enseignant") {
+    var dateDebut = new Date(d);
+    var dateFin = new Date(d);
+    dateDebut.setHours(0);
+    dateDebut.setMinutes(0);
+    dateDebut.setSeconds(0);
+    dateFin.setHours(23);
+    dateFin.setMinutes(59);
+    dateFin.setSeconds(59);
+    var evts = scheduler.getEvents(dateDebut, dateFin);
+    evts.sort(function(a,b){ return (a.start_date < b.start_date ? 1 : -1); });
+    var events = [];
+    for (var evt=0; evt<evts.length; evt++) {
+      events.push(evts[evt].id);
+    }
+    var url = eliot.textes.vuecalendaire.ConfigServeur.url.day;
+    var format = scheduler.date.date_to_str("%Y-%m-%d");
+    var strDate = format(d);
+    var param = "";
+    if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent") {
+      param = "&parent=true&enseignant=false";
+      var idPersonne = document.getElementById("elevesListe").value;
+      param += "&idEleve=" + idPersonne;
+    } else if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant") {
+      param = "&parent=false&enseignant=true";
+    } else {
+      param = "&parent=false&enseignant=false";
+    }
+    url += "?date=" + strDate + param + "&events=" + events;
+    scheduler.unselect();
+
+    enteteJourReinit();
+    if (divId && document.getElementById(divId))
+      document.getElementById(divId).style.color = "red";
+
+    dhxLayout.cells("b").attachURL(url);//, true);
+    scheduler._lightbox = null;
+ // }
+}
+
+function enteteJourReinit() {
+  var elmts = document.getElementsByClassName("dhx_scale_bar");
+  for (var i=0; i<elmts.length ; i++) {
+    elmts[i].style.color = "#767676";
+  }
+  if(eliot.textes.vuecalendaire.ConfigServeur.data.acces == "eleve" ||
+      eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent" ||
+      eliot.textes.vuecalendaire.ConfigServeur.data.acces == "enseignant") {
+    // ajout de la colorisation en bleu de l'entête des journees si présence d'activites
+    var elmts = document.getElementsByClassName("dhx_scale_bar");
+    for (var i = 0; i < elmts.length; i++) {
+      hasActivitesForDay(elmts[i]);
+    }
+  }
+}
+
+// colorisation des jours qui ont des activités pour la vue élève
+function hasActivitesForDay(element) {
+  var listJours = eliot.textes.vuecalendaire.ConfigServeur.data.listeJoursWithActivitesMaison;
+  for (var j=0; j<listJours.length; j++) {
+    if (element.id === 'dhx_scale_bar_day_'+listJours[j]) {
+      element.style.color = "blue";
+    }
+  }
+}
+
+// Recuperation de la largeur de la page pour adapter la largeur du calendrier :
+function getWidth() {
+  var width;
+  if (self.innerHeight)
+    width = self.innerWidth;
+  if (document.documentElement && document.documentElement.clientWidth)
+    width = document.documentElement.clientWidth;
+  if (document.body)
+    width = document.body.clientWidth;
+  return (width);  // * 0.95);
+}
+
+// Recuperation de la hauteur de la page pour adapter la hauteur du calendrier :
+function getHeight() {
+  var height;
+  if (self.innerWidth)
+    height = self.innerHeight;
+  if (document.documentElement && document.documentElement.clientHeight)
+    height = document.documentElement.clientHeight;
+  if (document.body)
+    height = document.body.clientHeight;
+  //return (height);  // * 0.95);
+  //return (height - 40);
+  height = height - 50;
+  if (eliot.textes.vuecalendaire.ConfigServeur.data.acces == "parent")
+    height = height - document.getElementById("eleve_select").offsetHeight;
+  return height;
+}
+
+
+
+function enregistrer() {
+  document.getElementById('frame_detail').contentWindow.document.getElementById('btn_enregistrer').click();
+}
+
+
+function chargeDonneesEleve(url, idEleve) {
+  var idPersonne = idEleve;
+  //if (idEleve == 235182) idPersonne  = 8203;
+  //else if (idEleve == 237778) idPersonne  = 9007;
+  scheduler.clearAll();
+  scheduler.load(url + "?idEleve="+idPersonne, "json");
+  // Identification des jours qui possèdent des activités
+  initDaysWithActivity();
+}
+
+function eleveSelectionAffiche(afficher) {
+  var select, div0;
+  if (afficher) {
+    select = document.getElementById('elevesListe');
+    select.style.opacity = '1';
+    select.style.disabled = 'false';
+    div0 = document.getElementById('eleve_select');
+    div0.style.height = '30px';
+    div0.style.borderBottom = '1px solid rgba(0,0,0,.2)';
+  } else {
+    select = document.getElementById('elevesListe');
+    select.style.opacity = '0';
+    select.style.disabled = 'true';
+    div0 = document.getElementById('eleve_select');
+    div0.style.height = '0px';
+    div0.style.borderBottom = '0px hidden #000';
+  }
+}
+
+
+// Appel de la fonction init() au chargement de la fenêtre :
+window.onload=init;
+
+// Enregistrement des activités avant de quitter la page :
+window.onbeforeunload = verifier;
+function verifier() {
+  //console.info("onbeforeunload");
+  enregistreSiModif();
+}
+
+
+
+//window.onresize=init;
+
+//var t=null;
+//dhx.event(window,"resize",function(){
+//  if(t)
+//    window.clearTimeout(t);
+//  t = window.setTimeout(function(){
+//    $$("scheduler").adjust();
+//  },100)
+//});
+//dhx.attachEvent("onRotate",function(){
+//  $$("scheduler").adjust();
+//});
+
+//    window.onresize = function(event) {
+//      resizeDiv();
+//    }
+//
+//    function resizeDiv() {
+//      console.log("RESIZE ME....");
+////      vpw = window.width();
+//      vph = getHeight();
+//      $('#idLayoutObj').css({'height': vph + 'px'});
+//    }
+function redimensionner() {
+
+  var w = getWidth();
+  var h = getHeight();
+  var h2 = parseInt(getHeight()*0.99);
+
+  var layout = document.getElementById('idLayoutObj');
+  if (layout) {
+    layout.style.width = '' + w + 'px';
+    layout.style.height = '' + h + 'px';
+  }
+  dhxLayout.setSizes();
+
+  var frame = document.getElementById('frame_detail');
+  if (frame) frame.style.height = '' + h2 + 'px';
+
+  dhxLayout.cells("a").setWidth(w/2);
+  dhxLayout.cells("a").setHeight(h);
+  dhxLayout.cells("b").setHeight(h);
+
+  var div1=document.getElementsByClassName('dhx_cal_light dhx_cal_light_wide');
+  if (div1[0]) div1[0].style.height = '' + h + 'px';
+  var div2=document.getElementsByClassName('dhx_cal_larea');
+  if (div2[0]) div2[0].style.height = '' + h + 'px';
+  var div3=document.getElementsByClassName('dhx_wrap_section');
+  if (div3[0]) div3[0].style.height = '' + h + 'px';
+  var div4=document.getElementsByClassName('dhx_cal_ltext dhx_cal_template');
+  if (div4[0]) div4[0].style.height = '' + h + 'px';
+
+  var div5 = document.getElementsByClassName('dhx_cal_today_button');
+  var div6 = document.getElementsByClassName('dhx_cal_date');
+  if(div5[0] && div6[0]) {
+    if (getWidth() < 1000) {
+      div5[0].style.fontSize = '10px';
+      div6[0].style.fontSize = '17px';
+    } else {
+      div5[0].style.fontSize = '13px';
+      div6[0].style.fontSize = '22px';
+    }
+  }
+  var iframe = document.getElementById('frame_detail');
+  if(iframe) {
+    var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+    var titreActivite = innerDoc.getElementById('titre');
+    if (titreActivite) {
+      if (getWidth() < 1000) {
+        titreActivite.style.fontSize = '10px';
+      } else {
+        titreActivite.style.fontSize = '12px';
+      }
+    }
+  }
+
+  scheduler.setLightboxSize();
+}
+// Redimensionnement de la vue calendaire au redimensionnement de la fenêtre :
+
+window.onresize = redimensionner;
+

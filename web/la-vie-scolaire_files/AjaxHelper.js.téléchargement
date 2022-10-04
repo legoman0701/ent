@@ -1,0 +1,127 @@
+/*
+ * Copyright © FYLAB and the Conseil Régional d'Île-de-France, 2009
+ * This file is part of L'Interface Libre et Interactive de l'Enseignement (Lilie).
+ *
+ * Lilie is free software. You can redistribute it and/or modify since
+ * you respect the terms of either (at least one of the both license) :
+ * - under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * - the CeCILL-C as published by CeCILL-C; either version 1 of the
+ * License, or any later version
+ *
+ * There are special exceptions to the terms and conditions of the
+ * licenses as they are applied to this software. View the full text of
+ * the exception in file LICENSE.txt in the directory of this software
+ * distribution.
+ *
+ * Lilie is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * Licenses for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * and the CeCILL-C along with Lilie. If not, see :
+ *  <http://www.gnu.org/licenses/> and
+ *  <http://www.cecill.info/licences.fr.html>.
+ */
+
+Ext.ns('eliot.commun');
+
+/*
+ *  Centralisation du paramétrage des requêtes Ajax : timeout et loading mask
+ */
+Ext.Ajax.timeout = 300000;  //par défaut 30000 ms
+var defaultTempoLoadMask = 1000; //temporisation avant affichage loadMask en ms
+var defaultShowLoadMask = true;
+var feuFertLoadMask = false;
+
+/**
+ * Helper pour les requêtes AJAX
+ * @author onic
+ *
+ * @cfg url
+ * @cfg params
+ * @cfg success function(reponse)
+ * @cfg failure function(reponse)
+ * @cfg scope
+ */
+eliot.commun.AjaxHelper = {
+
+  request: function(config) {
+
+    var cfg = {
+      url: undefined,
+      params: undefined,
+      success: Ext.emptyFn,
+      failure: Ext.emptyFn,
+      scope: this,
+      maskText: undefined,
+      timeout: Ext.Ajax.timeout, // 30000 ms (30 secondes) par défaut
+      showLoadMask: defaultShowLoadMask,
+      tempoLoadMask: defaultTempoLoadMask
+    };
+
+    Ext.apply(cfg, config);
+
+    return Ext.Ajax.request({
+      url: cfg.url,
+      params: cfg.params,
+      timeout: cfg.timeout,
+      showLoadMask: cfg.showLoadMask,
+      tempoLoadMask: cfg.tempoLoadMask,
+
+      success: function(response, request) {
+        var reponse = Ext.decode(response.responseText);
+
+        if (reponse.success == true) {
+          cfg.success.call(cfg.scope, reponse, request);
+        }
+        else {
+          cfg.failure.call(cfg.scope, reponse, request);
+        }
+      },
+
+      failure: function() {
+        reponse = {
+          success: false,
+          errorMsg: undefined
+        };
+        cfg.failure.call(cfg.scope, reponse);
+      },
+
+      scope: this
+    });
+
+  }
+};
+
+Ext.Ajax.on('beforerequest', function(connection, options){
+  var showLoadMask = options.showLoadMask !== undefined ?
+      options.showLoadMask : defaultShowLoadMask;
+
+  if(showLoadMask) {
+    var tempoLoadMask = options.tempoLoadMask !== undefined ?
+        options.tempoLoadMask : defaultTempoLoadMask;
+
+    feuFertLoadMask = true;
+    setTimeout(
+        function(){
+          if (feuFertLoadMask) {
+            Ext.getBody().mask('en cours ...','x-mask-loading')
+          }
+        },
+        tempoLoadMask
+    );
+  }
+});
+
+Ext.Ajax.on('requestcomplete', function(connection, response, options){
+  feuFertLoadMask = false;
+  Ext.getBody().unmask();
+});
+
+Ext.Ajax.on('requestexception', function(connection, response, options){
+  feuFertLoadMask = false;
+  Ext.getBody().unmask();
+});

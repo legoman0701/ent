@@ -1,0 +1,41 @@
+/**
+ * Classe Application de la page de vue calendaire
+ * @author tfer
+ */
+
+Ext.ns('eliot.textes.vuecalendaire');
+
+eliot.textes.vuecalendaire.Application = function () {
+
+  var Clazz = Ext.extend(Ext.util.Observable, {
+
+    constructor:function () {
+
+      this.ns = eliot.textes.vuecalendaire;
+      this.ConfigServeur = this.ns.ConfigServeur;
+      this.Constantes = this.ns.Constantes;
+
+      // Supprime la progresse barre
+      eliot.textes.commons.Utils.supprimeLoadMask(250);
+
+      var centerRegionItems = [];
+
+      // Rendu du viewport
+      Ext.onReady(function () {
+        //eliot.layout.doLayout(
+        eliot.layout.doSimpleLayout(
+            this.Constantes.regionId.viewPort,
+            this.Constantes.regionId.northPanel,
+            this.Constantes.regionId.centerPanel,
+            centerRegionItems
+        )
+      },
+      this);
+
+    }
+
+  });
+
+  return new Clazz();
+
+}();

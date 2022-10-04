@@ -1,0 +1,381 @@
+/**
+ * @author tfer
+ */
+
+html, body {
+  margin: 0px;
+  padding: 0px;
+  height: 100%;
+  overflow: hidden;
+}
+.dhx_delete_btn_set {
+  color: #444;
+  visibility: hidden;
+}
+.dhx_cal_event div.dhx_footer,
+.dhx_cal_event.past_event div.dhx_footer,
+.dhx_cal_event.event_english div.dhx_footer,
+.dhx_cal_event.event_FRANC div.dhx_footer,
+.dhx_cal_event.event_PH-CH div.dhx_footer,
+.dhx_cal_event.event_math div.dhx_footer,
+.dhx_cal_event.event_MATHS div.dhx_footer,
+.dhx_cal_event.event_HIGEO div.dhx_footer,
+.dhx_cal_event.event_science div.dhx_footer{
+  background-color: transparent !important;
+}
+.dhx_cal_event .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  /*opacity: 0.7;*/
+  /*color:#FFF;*/
+}
+/*********************************************/
+.dhx_cal_event.home .dhx_body{
+  background-image:url(../js/lib/dhtmlx/imgs/activite_maison_bleu.png);
+  background-repeat:no-repeat;
+  background-position:bottom right;
+}
+
+.dhx_cal_event.homeChecked .dhx_body{
+  background-image:url(../js/lib/dhtmlx/imgs/activite_maison_vert.png);
+  background-repeat:no-repeat;
+  background-position:bottom right;
+}
+
+/* activité uniquement maison*/
+.dhx_cal_event.home.homeonly .dhx_body{
+  background-image:url(../js/lib/dhtmlx/imgs/activite_maison_peinte_bleu.png);
+  background-repeat:no-repeat;
+  background-position:bottom right;
+}
+
+/* activité uniquement maison faite*/
+.dhx_cal_event.homeChecked.homeonly .dhx_body{
+  background-image:url(../js/lib/dhtmlx/imgs/activite_maison_peinte_vert.png);
+  background-repeat:no-repeat;
+  background-position:bottom right;
+}
+
+.dhx_cal_event.sansActivite .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  border-color: rgb(90,154,223);
+}
+.dhx_cal_event.sansActivite .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.sansActiviteHome .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  border-color: rgb(90,154,223);
+}
+.dhx_cal_event.sansActiviteHome .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.avecActivite .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(140,185,233);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.avecActivite .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.avecActiviteHome .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(140,185,233);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.avecActiviteHome .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+/* uniquement devoir maison : fond blanc */
+.dhx_cal_event.avecActivite.homeonly .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  border-color: rgb(90,154,223);
+}
+
+/* uniquement devoir maison : entete horraire avec fond bleu */
+.dhx_cal_event.avecActivite.homeonly .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:rgb(90,154,223);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+/* uniquement devoir maison : fond blanc */
+.dhx_cal_event.avecActiviteHome.homeonly .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  border-color: rgb(90,154,223);
+}
+
+/* uniquement devoir maison : entete horraire avec fond bleu */
+.dhx_cal_event.avecActiviteHome.homeonly .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:rgb(90,154,223);
+  color:#FFF !important;
+  border-color: rgb(90,154,223);
+}
+
+.dhx_cal_event.sansActiviteSelected .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.sansActiviteSelected .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.sansActiviteHomeSelected .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.sansActiviteHomeSelected .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.avecActiviteSelected .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(140,185,233);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.avecActiviteSelected .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.avecActiviteHomeSelected .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(140,185,233);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+.dhx_cal_event.avecActiviteHomeSelected .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color: rgb(90,154,223);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+/* uniquement devoir maison : fond blanc */
+.dhx_cal_event.avecActiviteSelected.homeonly  .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+/* uniquement devoir maison :entete horraire avec fond bleu */
+.dhx_cal_event.avecActiviteSelected.homeonly  .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:rgb(90,154,223);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+/* uniquement devoir maison : fond blanc */
+.dhx_cal_event.avecActiviteHome.homeonly  .dhx_body{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:#FFF !important;
+  color:#000 !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+/* uniquement devoir maison :entete horraire avec fond bleu */
+.dhx_cal_event.avecActiviteHome.homeonly  .dhx_title{
+  -webkit-transition: opacity 0.1s;
+  transition: opacity 0.1s;
+  background-color:rgb(90,154,223);
+  color:#FFF !important;
+  font-weight: bold;
+  border-color: red;
+}
+
+/*********************************************/
+.dhx_footer{
+  width:0px !important;
+}
+
+.dhx_cal_event .dhx_title{
+  line-height: 12px;
+}
+.dhx_cal_event_line:hover,
+.dhx_cal_event:hover .dhx_body,
+.dhx_cal_event.selected .dhx_body,
+.dhx_cal_event.dhx_cal_select_menu .dhx_body{
+  opacity: 1;
+}
+
+.dhx_cal_event.event_FRANC div, .dhx_cal_event_line.event_FRANC{
+  background-color: #36BD14 !important;
+  border-color: #698490 !important;
+}
+.dhx_cal_event_clear.event_FRANC{
+  color:#36BD14 !important;
+}
+
+/*.dhx_cal_event.event_math div, .dhx_cal_event_line.event_math{*/
+.dhx_cal_event.event_MATHS div, .dhx_cal_event_line.event_MATHS {
+  background-color: orange !important;
+  border-color: #a36800 !important;
+}
+/*.dhx_cal_event_clear.event_math{*/
+.dhx_cal_event_clear.event_MATHS {
+  color:orange !important;
+}
+
+.dhx_cal_event.event_science div, .dhx_cal_event_line.event_science{
+  background-color: #36BD14 !important;
+  border-color: #698490 !important;
+}
+.dhx_cal_event_clear.event_science{
+  color:#36BD14 !important;
+}
+
+.dhx_cal_event.event_english div, .dhx_cal_event_line.event_english{
+  background-color: #FC5BD5 !important;
+  border-color: #B82594 !important;
+}
+.dhx_cal_event_clear.event_english{
+  color:#FC5BD5 !important;
+}
+
+.dhx_cal_event.event_PH-CH div, .dhx_cal_event_line.event_PH-CH{
+  background-color: #FC5BD5 !important;
+  border-color: #B82594 !important;
+}
+.dhx_cal_event_clear.event_PH-CH{
+  color:#FC5BD5 !important;
+}
+
+.dhx_cal_event.event_HIGEO div, .dhx_cal_event_line.event_HIGEO{
+  background-color: #0099FF !important;
+  border-color: #000099 !important;
+}
+.dhx_cal_event_clear.event_HIGEO{
+  color:#0099FF !important;
+}
+
+.dhx_scale_bar {
+  border-left: 1px solid #CECECE;
+  font: 11px/16px "Segoe UI", Arial;
+  color: #767676;
+  line-height: 30px;
+  padding-top: 2px;
+  background-color: #fff
+}
+
+.prev_button_set, .next_button_set, .save_button_set{
+  /*background-color:#2B6FB6;*/
+  /*color:white;*/
+  background-color: rgb(140,185,233);
+  color: black;
+}
+
+
+#elevesListe {
+  /*position: fixed;*/
+  /*top: 35px;*/
+  /*left: 10px;*/
+  z-index: 3000;
+  margin-left: 5px;
+  margin-top: 3px;
+  width: 200px;
+  text-overflow: ellipsis;
+}
+
+#elevesListe option {
+  text-overflow: ellipsis;
+}
+
+#eleve_select {
+  height: 30px;
+  border-bottom: 1px solid rgba(0,0,0,.2);
+}
+
+.dhx_cal_light_wide .dhx_wrap_section {
+  border-bottom: 0
+}
+
+#btn_0 {
+  display: none;
+}
+
+#btn_1 {
+  display: none;
+}

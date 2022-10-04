@@ -1,0 +1,148 @@
+Ext.ns('eliot.menu');
+
+/**
+ * Construit la toolbar ExtJS correspondant au menu principal de l'application
+ * à partir de l'encodage json d'un objet de classe
+ * org.lilie.services.eliot.menuMenuInfo (eliot-app-plugin)
+ * @author othe
+ * @author jtra
+ * @author bahj
+ */
+eliot.menu.creeToolbar = function(jsonMenu) {
+
+  function onButtonClick(btn) {
+    if (btn.url) {
+      window.location.href = btn.url;
+    }
+  }
+
+  function onButtonClickNewTab(btn) {
+    if (btn.url) {
+      window.open(btn.url, '_newtab');
+    }
+  }
+
+  function onRadioClick(radio, checked) {
+    if (checked === true) {
+      if (radio.url) {
+        window.location.href = radio.url;
+      }
+    }
+  }
+
+
+  /**
+   * Crée un sous menu déroulant d'un élément principal de menu
+   * @param item un élément de menu (cf. encodage json de MenuItemInfo)
+   */
+  var fnCreeSousMenu = function(item) {
+    var menu = new Ext.menu.Menu({
+      style: {
+        overflow: 'visible'
+      }
+    });
+
+    var sousMenuPrecedent;
+
+    Ext.each(
+        item.items,
+        function(sousMenu, index, items) {
+
+          if (sousMenu.menuType == 'separateur') {
+            if (typeof menu.items != 'undefined' &&
+                menu.items.length > 0 &&
+                sousMenuPrecedent.menuType!='separateur'
+                ) {
+              menu.add('-');
+            }
+          } else if (sousMenu.menuType == 'radio') { // Menu des établissements
+            menu.add(
+                new Ext.ComponentMgr.types[sousMenu.menuType]({
+                  url : sousMenu.url,
+                  handler : onRadioClick,
+                  checked : sousMenu.checked,
+                  disabled :sousMenu.disabled,
+                  name : sousMenu.nom,
+                  boxLabel  : sousMenu.label,
+                  text  : sousMenu.label,
+                  ctCls: 'x-box-layout-ct radio-box-label',
+                  height : 25,
+                  style : {
+                    marginLeft :27
+                  }
+                })
+            );
+          } else {
+            var handler = onButtonClick;
+            if (sousMenu.nouvelOnglet) {
+              handler = onButtonClickNewTab;
+            }
+            menu.add(
+                new Ext.ComponentMgr.types[sousMenu.menuType]({
+                  text : sousMenu.label,
+                  url : sousMenu.url,
+                  handler : handler,
+                  checked : sousMenu.checked
+                })
+            );
+          }
+          sousMenuPrecedent = sousMenu;
+        }
+    );
+
+    // enleve le separateur si c'est le dernier item
+    if (typeof menu.get(menu.items.length-1).initialConfig.text == 'undefined') {
+      menu.remove(menu.items.length-1);
+    }
+
+    return menu;
+  };
+
+  // Toolbar
+  var toolbar = new Ext.Toolbar({
+    id : 'menu-notes',
+    cls :'x-toolbar-menu'
+  });
+
+  // Création des éléments principaux de la toolbar
+  Ext.each(
+      jsonMenu.items,
+      function(item) {
+        var menu;
+        var handler = onButtonClick;
+
+        if (item.nouvelOnglet) {
+          handler = onButtonClickNewTab;
+        }
+
+        if (item.items.length > 0) {
+          menu = fnCreeSousMenu(item);
+        }
+
+        if (item.selectionne) {
+          toolbar.add(new Ext.Button({
+            text: item.label,
+            menu:menu,
+            url: item.url,
+            handler: handler,
+            cls : 'x-btn-eliot-selectionne menu-bouton-height',
+            overCls:'x-btn-eliot-high'
+          }));
+
+        }
+        else {
+          toolbar.add(new Ext.Button({
+            text: item.label,
+            menu:menu,
+            url: item.url,
+            handler: handler,
+            cls : 'x-btn-eliot menu-bouton-height',
+            overCls:'x-btn-eliot-high'
+          }));
+
+        }
+      }
+  );
+
+  return toolbar;
+};

@@ -1,0 +1,357 @@
+/**
+ * @author tfer
+ */
+
+body {
+  color: #000;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 12px;
+}
+
+label {
+  font-weight: normal;
+}
+
+textarea.form-control {
+  padding: 3px 6px;
+  color: inherit;
+}
+
+.sep_hr {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  height: 2px;
+  width: 100%;
+  horiz-align: left;
+  border: 0;
+  color: rgb(90,154,223);
+  background-color: rgb(192,192,192);
+}
+
+.sep_hr_bleu {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  height: 2px;
+  width: 100%;
+  horiz-align: left;
+  border: 0;
+  color: rgb(90,154,223);
+  background-color: rgb(90,154,223);
+}
+
+.evenement_detail {
+  width: 99%;
+}
+
+.info_cachee {
+  display: none;
+}
+
+.espace_haut {
+  margin-top: 5px;
+}
+
+.espace_haut_bas {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.ligne_container {
+  margin-top: 5px;
+  width: 100%;
+}
+
+/********************************************/
+/* aligner la case à cocher avec le texte : */
+.lblActTerminee {
+  display: block;
+  padding-left: 15px;
+  text-indent: -15px;
+}
+.chkActTerminee {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin:0 !important;
+  vertical-align: bottom;
+  position: relative;
+  top: -1px;
+  *overflow: hidden;
+}
+/********************************************/
+
+.donneLe {
+  float: left;
+  width: 244px;
+}
+.actTerminee {
+  padding: 0 0 0 250px;
+}
+
+.type {
+  float: left;
+  width: 244px;
+}
+.chapitre {
+  padding: 0 0 0 250px;
+}
+
+.btn_ajout_doc {
+  background-color: rgb(90,154,223);
+  color: #FFF;
+  height: 16px;
+  line-height: 16px;
+  width: 16px;
+  border:0 none rgb(90,154,223);
+  margin-top: 0;
+  padding: 0 0 0 0;
+  text-align:center;
+  font-weight: bold;
+}
+
+.cours_liste{
+  float: left;
+  width: 300px;
+}
+
+.cours_date {
+  padding: 0 0 0 305px;
+  height: 30px;
+  width: 30px;
+}
+
+.taf_cours {
+  height: 30px;
+}
+
+.taf_date_label {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+#taf_date {
+  text-align: center;
+  display: none;
+}
+
+.input-group-addon {
+  border-left: 1px solid #ccc !important;
+  border-bottom-left-radius : 5px !important;
+  border-top-left-radius : 5px !important;
+}
+.my_datepicker .form-control {
+  height: 30px;
+  padding: 1px;
+}
+
+.act_sep_top {
+  margin-top: 33px;
+  margin-bottom: 2px;
+  height: 24px;
+  line-height: 24px;
+  color: #FFFFFF;
+  background-color: rgb(90,154,223);
+}
+.act_sep_top_eleve {
+  margin-top: 33px;
+  margin-bottom: 2px;
+  height: 4px;
+  line-height: 20px;
+  color: #FFFFFF;
+  background-color: rgb(90,154,223);
+}
+
+.act_sep_top_day {
+  margin-top: 40px;
+  margin-bottom: 2px;
+  height: 0;
+  line-height: 20px;
+  color: #FFFFFF;
+  background-color: rgb(90,154,223);
+}
+
+.act_sep {
+  margin-top: 15px;
+  margin-bottom: 2px;
+  height: 24px;
+  line-height: 24px;
+  color: #FFFFFF;
+  background-color: rgb(90,154,223);
+}
+
+.image_droite {
+  float: right;
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+.image_vuedetaille {
+  float: right;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.img_suppr {
+  cursor: pointer;
+}
+
+.document_saisie {
+  padding:0 35px 0 0;
+}
+
+.document_plus {
+  float:right;
+  width:30px;
+}
+
+.document_ressource {
+  height: 16px;
+}
+
+#racine {
+  margin-bottom: 80px;
+}
+
+#titre {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  width: 100%;
+  height: 33px;
+  color: rgb(90,154,223);
+  background-color: rgb(255,255,255);
+  border-bottom: 1px solid rgba(0,0,0,.2);
+  font-weight: bold;
+}
+
+#titre_day {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  width: 100%;
+  height: 40px;
+  color: rgb(90,154,223);
+  background-color: rgb(255,255,255);
+  border-bottom: 1px solid rgba(0,0,0,.2);
+  font-weight: bold;
+  padding-top: 7px;
+}
+
+.popin {
+  display: none;
+  z-index: 5000;
+  position: fixed;
+  width: 300px;
+  height: 100px;
+  top: 50%;
+  left: 50%;
+  margin-top: -50px;  /*Negative half of height.*/
+  margin-left: -150px;  /*Negative half of width.*/
+  background-color: #FFF;
+  border: 1px solid rgba(0,0,0,.2);
+  padding: 10px;
+}
+
+.btn_ok {
+  width: 100px;
+  margin-left: 50px;
+  margin-top: 10px;
+}
+
+.btn_annul {
+  width: 100px;
+  margin-left: 0;
+  margin-top: 10px;
+}
+
+#sep_2 {
+  display: none;
+}
+
+#sep_2_taf {
+  display: none;
+}
+
+#act_fichier_ajoute {
+  display: none;
+}
+
+#partie_taf_fin {
+  margin-bottom: 50px;
+}
+
+#barre_bas{
+  position: fixed;
+  z-index: 3;
+  bottom: 0;
+  width: 100%;
+  height: 45px;
+  background-color: rgb(255,255,255);
+  border-top: 1px solid rgba(0,0,0,.2);
+}
+
+#div_enregistrer {
+  position: fixed;
+  z-index: 3;
+  bottom: 0;
+  width: 130px;
+  height: 45px;
+  left: 50%;
+  margin-left: -65px;  /*Negative half of width.*/
+  padding-top: 5px;
+  background-color: rgb(255,255,255);
+  border-top: 1px solid rgba(0,0,0,.2);
+}
+
+.image_bas {
+  cursor: pointer;
+}
+
+.cke_chrome {
+  box-shadow: none !important;
+}
+
+/**************************************/
+/* Texte du placeholder en italique : */
+::-webkit-input-placeholder {
+  font-style: italic;
+}
+:-moz-placeholder {
+  font-style: italic;
+}
+::-moz-placeholder {
+  font-style: italic;
+}
+:-ms-input-placeholder {
+  font-style: italic;
+}
+/**************************************/
+
+.cModal {
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity:0;
+  pointer-events: none;
+}
+.cModal:target {
+  opacity:1;
+  pointer-events: auto;
+}
+.cModal > div {
+  max-width: 300px;
+  position: relative;
+  margin: 10% auto;
+  padding: 8px 8px 8px 8px;
+  border-radius: 2px;
+  background: #fff;
+}

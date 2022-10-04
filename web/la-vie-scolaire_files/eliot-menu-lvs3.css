@@ -1,0 +1,290 @@
+/***************************************************************************/
+/*               Tout ce qui suit concerne la toolbar                      */
+/***************************************************************************/
+
+
+.x-toolbar {
+  background-color: #FFF;
+  border-bottom: 1px solid #F2F2F2;
+}
+
+
+.x-toolbar-menu {
+  height: 30px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  margin-bottom: 8px;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  color: #ffffff;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 12px;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  line-height: normal;
+}
+
+/*bouton de la toolbar => hover */
+
+.x-btn-eliot .x-btn-mc {
+  border-bottom: 2px solid #fff;
+  transition: .3s;
+}
+
+.x-btn-eliot-high .x-btn-mc {
+  border-bottom: 2px solid #27B1FB;
+}
+
+.x-btn-eliot-selectionne .x-btn-mc {
+  border-bottom: 2px solid #27B1FB;
+}
+
+
+.x-btn-eliot-selectionne {
+  color: #606060;
+  display: block;
+  line-height: 12px;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  text-decoration: none;
+  vertical-align: middle;
+  text-decoration: none;
+  list-style-type: none;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  font-size: 12px;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+/*bouton dans la toolbar*/
+.x-btn-eliot {
+  color: #FFFFFF;
+  display: block;
+  font-size: 11px;
+  line-height: 11px;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  text-decoration: none;
+  vertical-align: middle;
+  text-decoration: none;
+  list-style-type: none;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  padding-left: 2em;
+  padding-right: 2em;
+  position: relative;
+}
+
+/* le bouton dans le bouton extJs */
+.x-btn-eliot button {
+  color: #606060;
+  font-size: 12px;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  background-color: transparent;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+.x-btn-eliot table {
+  border: none;
+  width: 270px;
+}
+
+.x-btn-eliot tr {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot table {
+  color: #606060;
+}
+
+.x-btn-eliot i {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot td {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot-high tr {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot-high table {
+  color: #606060;
+}
+
+.x-btn-eliot-high i {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot-high td {
+  background-image: none;
+  color: #606060;
+}
+
+.x-btn-eliot-high button {
+  color: #606060;
+  font-size: 12px;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  background-color: transparent;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+
+
+.x-btn-eliot-selectionne td {
+  background-image: none;
+}
+
+.x-btn-eliot-selectionne button {
+  color: #606060;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+/*bloc de menu déroulant*/
+.x-menu-list {
+  background-color: #FFFFFF; /*left: 0;*/
+  width: auto;
+}
+
+.x-menu {
+  background-color: #FFFFFF;
+}
+
+/* Eléments du menu déroulant */
+.x-menu-item {
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 12px;
+  font-size-adjust: none;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  float: none;
+  position: relative; /*margin-bottom: 0;*/
+  line-height: 1;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  color: #333333;
+}
+
+.x-menu-item-active a.x-menu-item {
+  margin-left: 0px;
+  margin-right: 0px;
+  background-color: #27B1FB;
+  color: #FFFFFF;
+  display: block; /*font-weight: normal;*/
+}
+
+.x-menu-list-item {
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+.x-menu-item-icon {
+  background-color: transparent;
+  background-position: center center;
+  height: 16px;
+  left: 3px;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  position: absolute;
+  top: 3px;
+  vertical-align: top;
+  width: 16px;
+  color: #222222;
+  cursor: pointer;
+  line-height: 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  text-decoration: none !important;
+  list-style-image: none;
+  text-decoration: none;
+  white-space: nowrap;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 12px;
+  font-size-adjust: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  font-weight: normal;
+}
+
+.x-menu-item-active {
+  margin-left: 0px;
+  margin-right: 0px;
+  border-bottom-width: 0;
+  border-top-width: 0;
+  margin-bottom: 0;
+  border-bottom-width: 0;
+  border-top-width: 0;
+}
+
+.radio-box-label .x-form-cb-label {
+  margin-right: 21px;
+  color: #222222;
+  text-decoration: none !important;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: normal;
+}
